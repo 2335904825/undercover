@@ -11,6 +11,7 @@
     <style>
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; -webkit-tap-highlight-color: transparent; }
         .bg-mahjong { background-color: #f0f7f4; }
+        .perspective-1000 { perspective: 1000px; }
         .preserve-3d { transform-style: preserve-3d; }
         .rotate-y-180 { transform: rotateY(180deg); }
         .backface-hidden { backface-visibility: hidden; }
@@ -26,19 +27,41 @@
             animation: spin 1s linear infinite;
         }
         @keyframes spin { 100% { transform: rotate(360deg); } }
+
+        /* Toast Animation */
+        .toast-enter-active, .toast-leave-active { transition: all 0.3s ease; }
+        .toast-enter-from { opacity: 0; transform: translateY(-20px); }
+        .toast-leave-to { opacity: 0; transform: translateY(-20px); }
     </style>
 </head>
 <body class="bg-mahjong text-slate-800 min-h-screen">
     <div id="app" class="w-full h-screen flex flex-col overflow-hidden relative">
 
+        <!-- Toast Notifications -->
+        <div class="fixed top-20 left-1/2 -translate-x-1/2 z-50 flex flex-col gap-2 w-full max-w-sm px-4 pointer-events-none">
+            <transition-group name="toast">
+                <div v-for="msg in notifications" :key="msg.id" class="bg-slate-800 text-white px-4 py-3 rounded-lg shadow-lg flex items-center gap-3 text-sm font-medium">
+                    <svg class="w-5 h-5 text-emerald-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    <span>{{ msg.text }}</span>
+                </div>
+            </transition-group>
+        </div>
+
+        <!-- Loading Overlay -->
+        <div v-if="isLoading" class="fixed inset-0 bg-white/90 backdrop-blur-sm z-50 flex flex-col items-center justify-center">
+            <div class="spinner mb-4"></div>
+            <div class="text-emerald-700 font-bold tracking-widest animate-pulse">{{ loadingText }}</div>
+        </div>
+
         <!-- Header -->
         <header class="bg-emerald-600 text-white p-4 shadow-md flex justify-between items-center z-10 shrink-0">
             <h1 class="text-xl font-bold tracking-wider">🀄️ 广东雀神联机版</h1>
             <div v-if="room" class="flex gap-4 items-center">
-                <span class="px-3 py-1 bg-emerald-700 rounded-full text-sm font-medium shadow-inner">
-                    房间号: {{ room.id }}
+                <span class="px-3 py-1 bg-emerald-700 rounded-full text-sm font-medium shadow-inner flex items-center gap-2">
+                    <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                    {{ room.id }}
                 </span>
-                <button v-if="screen !== 'setup'" @click="exitRoom" class="text-sm bg-red-500 hover:bg-red-600 px-3 py-1 rounded transition-colors">
+                <button v-if="screen !== 'setup'" @click="exitRoom" class="text-sm bg-red-500 hover:bg-red-600 px-3 py-1 rounded transition-colors shadow">
                     退出
                 </button>
             </div>
@@ -71,8 +94,7 @@
                     </div>
 
                     <button @click="mode === 'create' ? handleCreate() : handleJoin()" :disabled="isLoading" class="w-full py-4 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl shadow-lg shadow-emerald-200 transition-all active:scale-95 flex justify-center items-center">
-                        <span v-if="!isLoading">{{ mode === 'create' ? '创建并进入' : '加入房间' }}</span>
-                        <div v-else class="spinner !w-6 !h-6 !border-white !border-t-transparent"></div>
+                        <span>{{ mode === 'create' ? '创建并进入' : '加入房间' }}</span>
                     </button>
                 </div>
                 
@@ -85,7 +107,7 @@
             <div v-if="screen === 'waiting' && room" class="w-full max-w-lg space-y-6">
                 <div class="text-center mb-8">
                     <h2 class="text-3xl font-black text-emerald-800 tracking-widest mb-2">等候入座</h2>
-                    <p class="text-slate-500">房间号: <span class="font-mono font-bold text-lg text-emerald-600">{{ room.id }}</span> (把房间号分享给好友)</p>
+                    <p class="text-slate-500">房间号: <span class="font-mono font-bold text-lg text-emerald-600 bg-emerald-100 px-2 py-0.5 rounded">{{ room.id }}</span> (分享给好友)</p>
                 </div>
 
                 <div class="grid grid-cols-2 gap-4">
@@ -94,8 +116,8 @@
                             {{ p.pos }}
                         </div>
                         <div class="font-bold text-slate-800">{{ p.name }}</div>
-                        <div v-if="p.isHost" class="absolute top-2 right-2 text-xs bg-amber-100 text-amber-700 px-2 py-0.5 rounded font-medium">房主</div>
-                        <div v-if="p.id === playerInfo.id" class="absolute top-2 left-2 text-xs bg-emerald-500 text-white px-2 py-0.5 rounded font-medium">我</div>
+                        <div v-if="p.isHost" class="absolute top-2 right-2 text-xs bg-amber-100 text-amber-700 px-2 py-0.5 rounded font-medium shadow-sm">房主</div>
+                        <div v-if="p.name === playerInfo.name" class="absolute top-2 left-2 text-xs bg-emerald-500 text-white px-2 py-0.5 rounded font-medium shadow-sm">我</div>
                     </div>
                     <div v-for="i in (4 - room.players.length)" :key="'empty'+i" class="border-2 border-dashed border-slate-300 rounded-xl p-4 flex flex-col items-center justify-center gap-2 opacity-50 bg-slate-50">
                         <div class="w-12 h-12 rounded-full border-2 border-slate-300 flex items-center justify-center text-slate-400 text-xl font-medium">?</div>
@@ -108,91 +130,80 @@
                         {{ room.players.length < 2 ? '至少需要2人开始' : (room.players.length < 4 ? '未满4人，强制开始' : '人员齐整，开始游戏') }}
                     </button>
                 </div>
-                <div v-else class="pt-6 text-center text-slate-500 flex items-center justify-center gap-3">
+                <div v-else class="pt-6 text-center text-slate-500 flex items-center justify-center gap-3 bg-white/50 py-4 rounded-xl border border-slate-200">
                     <div class="spinner !w-5 !h-5 border-emerald-300 border-t-emerald-600"></div>
                     等待房主开始游戏...
                 </div>
             </div>
 
-            <!-- ====== [3] Game Screen ====== -->
-            <div v-if="screen === 'game' && room" class="w-full max-w-4xl h-full flex flex-col gap-4">
+            <!-- ====== [3] Game Screen (Exclusive Focus Layout) ====== -->
+            <div v-if="screen === 'game' && room" class="w-full max-w-md h-full flex flex-col items-center py-2 gap-6">
                 
-                <div class="flex justify-between items-center bg-white/50 p-3 rounded-xl shadow-sm">
-                    <div class="text-slate-600 font-medium">总局数：<span class="text-emerald-700 font-bold">{{ room.roundCount }}</span></div>
-                    <button v-if="playerInfo?.isHost" @click="openSettleModal" class="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white font-bold rounded-lg shadow transition-colors text-sm">
-                        本局结算
-                    </button>
-                </div>
-
-                <div class="flex-1 grid grid-cols-2 gap-4 auto-rows-fr">
-                    <div v-for="player in room.players" :key="player.id" class="relative group perspective-1000">
-                        <!-- Card Container -->
-                        <div class="w-full h-full min-h-[220px] relative transition-transform duration-700 preserve-3d"
-                             :class="[
-                                player.id === playerInfo?.id && !player.revealed ? 'cursor-pointer hover:scale-[1.02]' : '',
-                                player.revealed ? 'rotate-y-180' : ''
-                             ]"
-                             @click="revealMyRule(player.id)">
-                            
-                            <!-- Card Back (Unrevealed) -->
-                            <div class="absolute inset-0 backface-hidden glass-panel rounded-2xl shadow-md p-5 flex flex-col items-center justify-between border-2 border-emerald-100 bg-gradient-to-br from-white to-emerald-50">
-                                <div class="w-full flex justify-between items-start">
-                                    <div class="flex items-center gap-2">
-                                        <div class="w-8 h-8 rounded-full bg-emerald-100 text-emerald-700 font-bold flex items-center justify-center shadow-inner">{{ player.pos }}</div>
-                                        <div class="font-bold text-slate-800 text-lg">{{ player.name }}</div>
-                                    </div>
-                                    <div class="text-right">
-                                        <div class="text-xs text-slate-400 font-medium uppercase tracking-wider mb-1">Score</div>
-                                        <div class="font-black text-2xl" :class="player.score >= 0 ? 'text-emerald-600' : 'text-red-500'">{{ player.score > 0 ? '+' : '' }}{{ player.score }}</div>
-                                    </div>
-                                </div>
-                                
-                                <div class="w-full flex-1 flex flex-col items-center justify-center mt-4">
-                                    <template v-if="player.id === playerInfo?.id">
-                                        <div class="text-emerald-600 mb-3 animate-bounce">
-                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 15l-2 5L9 9l11 4-5 2zm0 0l5 5M7.188 2.239l.777 2.897M5.136 7.965l-2.898-.777M13.95 4.05l-2.122 2.122m-5.657 5.656l-2.12 2.122" />
-                                            </svg>
-                                        </div>
-                                        <div class="text-center font-bold text-emerald-800 bg-emerald-100 px-4 py-2 rounded-full border border-emerald-200">
-                                            点击翻开你的规则
-                                        </div>
-                                    </template>
-                                    <template v-else>
-                                        <div class="w-16 h-20 border-2 border-dashed border-emerald-200 rounded-lg flex items-center justify-center bg-white/50 mb-2">
-                                            <span class="text-3xl opacity-20">🀄️</span>
-                                        </div>
-                                        <div class="text-sm text-slate-400 font-medium tracking-widest uppercase">隐藏中</div>
-                                    </template>
-                                </div>
-                                <div v-if="player.id === playerInfo?.id" class="absolute top-3 left-1/2 -translate-x-1/2 bg-amber-400 text-amber-900 text-[10px] font-bold px-2 py-0.5 rounded shadow-sm">
-                                    你的手牌
-                                </div>
-                            </div>
-
-                            <!-- Card Front (Revealed Rule) -->
-                            <div class="absolute inset-0 backface-hidden rotate-y-180 bg-white rounded-2xl shadow-xl p-5 flex flex-col border-2 border-emerald-500 overflow-hidden">
-                                <div class="absolute top-0 left-0 w-full h-1.5 bg-emerald-500"></div>
-                                <div class="w-full flex justify-between items-start mb-4">
-                                    <div class="flex items-center gap-2">
-                                        <div class="w-8 h-8 rounded-full bg-emerald-600 text-white font-bold flex items-center justify-center shadow-inner">{{ player.pos }}</div>
-                                        <div class="font-bold text-slate-800 text-lg">{{ player.name }}</div>
-                                    </div>
-                                    <div class="font-black text-2xl" :class="player.score >= 0 ? 'text-emerald-600' : 'text-red-500'">{{ player.score > 0 ? '+' : '' }}{{ player.score }}</div>
-                                </div>
-                                
-                                <div v-if="player.currentRule" class="flex-1 flex flex-col justify-center bg-emerald-50/50 rounded-xl p-4 border border-emerald-100 relative">
-                                    <span class="absolute -top-3 -right-2 text-6xl opacity-5">🀄️</span>
-                                    <div class="text-xs font-bold text-emerald-600 uppercase tracking-widest mb-1">{{ player.currentRule.category }}</div>
-                                    <h3 class="text-xl font-black text-slate-800 mb-2">{{ player.currentRule.title }}</h3>
-                                    <p class="text-slate-600 text-sm leading-relaxed">{{ player.currentRule.text }}</p>
-                                </div>
-                            </div>
-
-                        </div>
+                <!-- Top info -->
+                <div class="w-full flex justify-between items-center bg-white/80 backdrop-blur p-3 rounded-xl shadow-sm border border-emerald-100 shrink-0">
+                    <div class="text-slate-600 font-medium px-2">第 <span class="text-emerald-700 font-black text-xl mx-1">{{ room.roundCount }}</span> 局</div>
+                    <div class="flex items-center gap-4">
+                        <div class="text-sm font-medium">总得分: <span :class="myPlayer.score >= 0 ? 'text-emerald-600' : 'text-red-500'" class="font-black text-xl ml-1">{{ myPlayer.score > 0 ? '+' : '' }}{{ myPlayer.score }}</span></div>
+                        <button v-if="playerInfo?.isHost" @click="openSettleModal" class="px-4 py-2 bg-gradient-to-b from-amber-400 to-amber-500 hover:from-amber-500 hover:to-amber-600 text-amber-950 font-bold rounded-lg shadow active:scale-95 transition-transform text-sm border border-amber-600">
+                            结算本局
+                        </button>
                     </div>
                 </div>
 
+                <!-- My Card (Exclusive focus) -->
+                <div class="relative w-full aspect-[3/4] max-h-[460px] perspective-1000 mx-auto group">
+                    <div class="w-full h-full relative transition-transform duration-700 preserve-3d"
+                         :class="{ 'rotate-y-180': myPlayer.revealed }"
+                         @click="!myPlayer.revealed && revealMyRule(myPlayer.id)">
+                        
+                        <!-- Back of card -->
+                        <div class="absolute inset-0 backface-hidden glass-panel rounded-3xl shadow-2xl p-6 flex flex-col items-center justify-center border-4 border-emerald-300 bg-gradient-to-br from-emerald-50 to-emerald-100 cursor-pointer hover:shadow-emerald-200/50 transition-shadow">
+                            <div class="w-24 h-24 bg-emerald-200 text-emerald-800 rounded-full flex items-center justify-center text-5xl font-black mb-6 shadow-inner">{{ myPlayer.pos }}</div>
+                            <div class="text-3xl font-bold text-slate-800 mb-10">{{ myPlayer.name }}</div>
+                            
+                            <div class="animate-bounce mt-4 text-emerald-700 font-bold bg-white px-8 py-3 rounded-full shadow-lg flex items-center gap-2 border border-emerald-200">
+                                <svg class="w-6 h-6 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 15l-2 5L9 9l11 4-5 2zm0 0l5 5M7.188 2.239l.777 2.897M5.136 7.965l-2.898-.777M13.95 4.05l-2.122 2.122m-5.657 5.656l-2.12 2.122" /></svg>
+                                点击翻开本局规则
+                            </div>
+                        </div>
+                        
+                        <!-- Front of card -->
+                        <div class="absolute inset-0 backface-hidden rotate-y-180 bg-[#fffff8] rounded-3xl shadow-2xl p-6 flex flex-col border-[6px] border-amber-400 overflow-hidden">
+                            <div class="absolute top-0 right-0 bg-amber-400 text-amber-950 text-sm font-black px-4 py-1.5 rounded-bl-xl shadow-sm tracking-widest">
+                                {{ myPlayer.currentRule?.category }}
+                            </div>
+                            
+                            <div class="flex items-center gap-3 mb-4 border-b-2 border-emerald-100 pb-4 mt-4">
+                                <div class="w-12 h-12 bg-emerald-600 text-white rounded-full flex items-center justify-center text-2xl font-black shadow-inner shrink-0">{{ myPlayer.pos }}</div>
+                                <div class="text-2xl font-bold text-slate-800 truncate">{{ myPlayer.name }}</div>
+                            </div>
+                            
+                            <div class="flex-1 flex flex-col justify-center items-center text-center overflow-y-auto">
+                                <h3 class="text-4xl font-black text-red-700 mb-6 font-serif leading-tight">{{ myPlayer.currentRule?.title }}</h3>
+                                <p class="text-slate-700 text-xl leading-relaxed px-2 font-medium">{{ myPlayer.currentRule?.text }}</p>
+                            </div>
+                            
+                            <div class="text-right text-slate-300 font-mono text-sm mt-4 font-bold shrink-0">
+                                RULE No.{{ myPlayer.currentRule?.id }}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Other players status -->
+                <div class="w-full mt-auto bg-white/70 backdrop-blur rounded-xl p-4 shadow-sm flex flex-col gap-3 border border-emerald-100 shrink-0">
+                    <div class="text-sm font-bold text-emerald-800 mb-1 border-b border-emerald-100 pb-2 flex justify-between">
+                        <span>其他玩家状态</span>
+                        <span class="text-xs text-slate-400 font-normal">你只能看到自己的规则</span>
+                    </div>
+                    <div class="grid grid-cols-3 gap-3">
+                        <div v-for="p in otherPlayers" :key="p.id" class="flex flex-col items-center bg-white rounded-lg p-2 shadow-sm border border-slate-100">
+                            <div class="w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm mb-1" :class="p.revealed ? 'bg-amber-100 text-amber-700' : 'bg-slate-100 text-slate-400'">{{ p.pos }}</div>
+                            <div class="text-xs font-bold text-slate-700 truncate w-full text-center">{{ p.name }}</div>
+                            <div class="text-[10px] mt-1 px-2 py-0.5 rounded-full font-bold" :class="p.revealed ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-400'">{{ p.revealed ? '已翻牌' : '未翻牌' }}</div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </main>
 
@@ -200,36 +211,36 @@
         <div v-if="showSettleModal && playerInfo?.isHost" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
             <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden flex flex-col max-h-[90vh]">
                 <div class="bg-emerald-600 p-4 text-white text-center">
-                    <h3 class="text-xl font-bold">对局结算</h3>
-                    <p class="text-emerald-100 text-sm">记录各玩家本局得分变动</p>
+                    <h3 class="text-xl font-bold tracking-widest">对局结算</h3>
+                    <p class="text-emerald-100 text-sm mt-1">记录各玩家本局得分变动</p>
                 </div>
                 
                 <div class="p-6 space-y-5 overflow-y-auto">
                     <div v-for="player in room.players" :key="player.id" class="flex items-center justify-between bg-slate-50 p-3 rounded-xl border border-slate-200">
                         <div class="flex items-center gap-3">
-                            <div class="w-8 h-8 bg-emerald-100 text-emerald-700 rounded-full flex items-center justify-center font-bold">{{ player.pos }}</div>
-                            <span class="font-bold text-slate-700">{{ player.name }}</span>
+                            <div class="w-10 h-10 bg-emerald-100 text-emerald-700 rounded-full flex items-center justify-center font-bold text-lg shadow-inner">{{ player.pos }}</div>
+                            <span class="font-bold text-slate-700 text-lg">{{ player.name }}</span>
                         </div>
                         <div class="flex items-center gap-3">
-                            <button @click="changeScore(player.id, -1)" class="w-8 h-8 rounded-full bg-red-100 text-red-600 hover:bg-red-200 font-bold flex items-center justify-center text-xl transition-colors">-</button>
-                            <span class="font-black text-xl w-12 text-center" :class="adjustments[player.id] > 0 ? 'text-emerald-600' : (adjustments[player.id] < 0 ? 'text-red-500' : 'text-slate-400')">
-                                {{ adjustments[player.id] > 0 ? '+' : '' }}{{ adjustments[player.id] }}
+                            <button @click="changeScore(player.name, -1)" class="w-10 h-10 rounded-full bg-red-100 text-red-600 hover:bg-red-200 font-bold flex items-center justify-center text-2xl transition-colors active:scale-90">-</button>
+                            <span class="font-black text-2xl w-14 text-center font-mono" :class="(adjustments[player.name] || 0) > 0 ? 'text-emerald-600' : ((adjustments[player.name] || 0) < 0 ? 'text-red-500' : 'text-slate-400')">
+                                {{ (adjustments[player.name] || 0) > 0 ? '+' : '' }}{{ adjustments[player.name] || 0 }}
                             </span>
-                            <button @click="changeScore(player.id, 1)" class="w-8 h-8 rounded-full bg-emerald-100 text-emerald-700 hover:bg-emerald-200 font-bold flex items-center justify-center text-xl transition-colors">+</button>
+                            <button @click="changeScore(player.name, 1)" class="w-10 h-10 rounded-full bg-emerald-100 text-emerald-700 hover:bg-emerald-200 font-bold flex items-center justify-center text-2xl transition-colors active:scale-90">+</button>
                         </div>
                     </div>
                     
-                    <div class="flex justify-between items-center p-3 bg-slate-100 rounded-lg text-sm font-medium">
-                        <span class="text-slate-600">总分校验：</span>
-                        <span :class="totalAdjustment === 0 ? 'text-emerald-600' : 'text-red-500'">
+                    <div class="flex justify-between items-center p-4 bg-slate-100 rounded-xl text-sm font-medium border border-slate-200">
+                        <span class="text-slate-600">账面流水校验：</span>
+                        <span class="font-bold text-lg" :class="totalAdjustment === 0 ? 'text-emerald-600' : 'text-red-500'">
                             {{ totalAdjustment === 0 ? '平账 ✅' : `差额: ${totalAdjustment} ⚠️` }}
                         </span>
                     </div>
                 </div>
 
-                <div class="p-4 border-t border-slate-100 bg-slate-50 flex gap-3">
-                    <button @click="showSettleModal = false" class="flex-1 py-3 text-slate-600 font-bold bg-white border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors">取消</button>
-                    <button @click="confirmSettle" class="flex-1 py-3 text-white font-bold bg-emerald-600 rounded-xl shadow-lg hover:bg-emerald-700 transition-colors">确认结算</button>
+                <div class="p-4 border-t border-slate-100 bg-slate-50 flex gap-3 shrink-0">
+                    <button @click="showSettleModal = false" class="flex-1 py-3 text-slate-600 font-bold bg-white border border-slate-200 rounded-xl hover:bg-slate-100 transition-colors active:scale-95">取消</button>
+                    <button @click="confirmSettle" class="flex-[2] py-3 text-white font-bold bg-emerald-600 rounded-xl shadow-lg hover:bg-emerald-700 transition-colors active:scale-95 text-lg tracking-widest">确认结算</button>
                 </div>
             </div>
         </div>
@@ -239,70 +250,1448 @@
     <script>
         // 麻将规则库
         const MAHJONG_RULES = [
-            { id: 1, category: '得分倍率', title: '早鸟红利', text: '在本局前5轮内（4人全部出过1次牌为1轮）胡牌，得分翻倍。' },
-            { id: 2, category: '得分倍率', title: '大器晚成', text: '在牌墙最后10张牌内胡牌，得分翻3倍。' },
-            { id: 3, category: '得分倍率', title: '自摸达人', text: '若本局自摸胡牌，每位对手需额外多支付2分。' },
-            { id: 5, category: '得分倍率', title: '精准射击', text: '开局选一个数字（如5），若胡牌的那张牌是该数字，分值翻倍。' },
-            { id: 6, category: '得分倍率', title: '幺九奖金', text: '胡牌时，你的牌型里每带有一个1或9，额外得1分。' },
-            { id: 7, category: '得分倍率', title: '单吊之王', text: '若胡牌时是“单吊一只”的听牌型，胡牌分数翻倍。' },
-            { id: 8, category: '得分倍率', title: '碰碰发财', text: '胡牌时手牌每有一组刻子（碰的牌），额外加1分。' },
-            { id: 9, category: '得分倍率', title: '和平使者', text: '若本局以“平胡”胡牌，得分翻倍。' },
-            { id: 10, category: '得分倍率', title: '明牌博弈', text: '你可以选择明牌打，作为交换，你胡牌时的分数翻3倍。' },
-            { id: 11, category: '得分倍率', title: '定向搜索', text: '摸牌前喊出一个花色，如果你摸到的是该花色，额外得1分。' },
-            { id: 12, category: '得分倍率', title: '碰碰狂人', text: '本局你每碰一次牌，胡牌时额外增加2分。' },
-            { id: 13, category: '得分倍率', title: '杠上开花任务', text: '如果你通过杠上开花胡牌，所有对手需支付5倍分数。' },
-            { id: 14, category: '得分倍率', title: '字牌收集者', text: '胡牌时手牌每有一张字牌，结算时额外加1分。' },
-            { id: 15, category: '得分倍率', title: '全求人挑战', text: '如果你最后只剩一张手牌胡牌，分数翻4倍。' },
-            { id: 16, category: '得分倍率', title: '绝张奇迹', text: '如果你胡的是场上最后一张该花色的牌，分数翻3倍。' },
-            { id: 17, category: '得分倍率', title: '双龙会', text: '如果你手中持有两组完全一样的顺子，额外加5分。' },
-            { id: 18, category: '得分倍率', title: '天命骰子', text: '胡牌后掷骰子，点数是几，点炮者就多付几分。' },
-            { id: 19, category: '得分倍率', title: '秩序维护', text: '如果你本局不碰、不杠，分数翻5倍。' },
-            { id: 20, category: '得分倍率', title: '终极逆袭', text: '如果你是本局分值最低的玩家，可以与最高分玩家平分收益。' },
-            
-            { id: 21, category: '操作权限', title: '黄金右手', text: '本局你每轮摸牌时，可以摸二选一（选完放回牌底）。' },
-            { id: 22, category: '操作权限', title: '开局洗牌', text: '发完初始牌后，暗牌交换，弃最多3张后从牌墙末尾补对应数量牌，不能挑牌。' },
-            { id: 23, category: '操作权限', title: '强制交换', text: '本局有一次机会，与任意一名对手盲交换一张手牌。只能在自己正常摸牌结束、出牌之前使用；' },
-            { id: 24, category: '操作权限', title: '弃牌回收', text: '有一次机会从弃牌堆捡回一张牌（需打出一张）。' },
-            { id: 25, category: '操作权限', title: '双倍补花', text: '如果你抓到花牌，可以连摸两张补牌，多余牌弃掉。' },
-            { id: 26, category: '操作权限', title: '牌墙探子', text: '随时可以查看牌墙最上方即将摸到的3张牌。' },
-            { id: 27, category: '操作权限', title: '万能风牌', text: '手中的风牌可以作为任意花色的“1”或“9”来组成顺子。' },
-            { id: 28, category: '操作权限', title: '逻辑大师', text: '可以将手中的一组对子直接拆开，当作两个万能“间隔牌”使用一圈。' },
-            { id: 30, category: '操作权限', title: '绝对防御', text: '开局前3圈，你打出的任何牌，对手都不能胡、吃、碰。' },
-            { id: 31, category: '操作权限', title: '自摸豁免', text: '如果别人自摸胡牌，你无需支付分值，由另外两名输家代付。' },
-            { id: 32, category: '操作权限', title: '保险基金', text: '如果你本局输分，最终赔付金额减半。' },
-            { id: 33, category: '操作权限', title: '禁区锁定', text: '指定一对手，他出的牌你都能碰，但你出的牌他不能。' },
-            { id: 34, category: '操作权限', title: '反弹护盾', text: '如果有对手碰了你打出的牌，他必须立即支付你1分。' },
-            { id: 35, category: '操作权限', title: '杠牌无效', text: '本局全场任何人的杠牌均不产生即时分数结算。' },
-            { id: 36, category: '操作权限', title: '安全出口', text: '其他人不能胡你的字牌。' },
-            { id: 37, category: '操作权限', title: '剩余扫描', text: '你可以询问场上任意一张牌是否在其他人手牌中。' },
-            { id: 38, category: '操作权限', title: '花色侦测', text: '可以要求一名对手告知他手中哪种花色的牌最多。' },
-            { id: 39, category: '操作权限', title: '恶意干扰', text: '在本局中，你可以强制让一名对手跳过一圈。' },
-            { id: 40, category: '操作权限', title: '弃牌重置', text: '摸到不想要的牌可以将其弃牌，重新摸一张（限一次）。' },
-            { id: 41, category: '操作权限', title: '战术撤退', text: '在本局中可以随时宣布放弃胡牌，换取不输分的权利。' },
-            
-            { id: 42, category: '运动惩罚', title: '庄家连坐', text: '庄家胡牌时，全场（除庄家外）按顺时针方向轮流做3个深蹲。' },
-            { id: 43, category: '运动惩罚', title: '幺九负重', text: '你每打出一张1或9，必须先完成3个深蹲。' },
-            { id: 44, category: '运动惩罚', title: '杠上律动', text: '只要你开杠，立刻完成5个开合跳。' },
-            { id: 45, category: '运动惩罚', title: '碰牌节拍', text: '只要有人碰牌，你就要做5次高抬腿。' },
-            { id: 46, category: '运动惩罚', title: '万子起落', text: '打出万牌时，对家深蹲5次。' },
-            { id: 49, category: '运动惩罚', title: '纯净苦修', text: '本局做清一色，每摸一张该花色以外的牌需做2个深蹲。' },
-            { id: 50, category: '运动惩罚', title: '决胜哨兵', text: '你一旦听牌，必须保持站立姿势打完剩下的局。' },
-            { id: 56, category: '运动惩罚', title: '铁面无私', text: '本局不准露出笑容，笑一次做5个深蹲。' },
-            { id: 68, category: '运动惩罚', title: '禁言深蹲', text: '全程禁止说话交流，出声一次，5个深蹲。' },
-            
-            { id: 72, category: '互动惩罚', title: '金鸡点头', text: '有人打出幺鸡，全场玩家一起快速点头3次。' },
-            { id: 73, category: '互动惩罚', title: '三元礼献', text: '摸到中、发、白任意一张，全场玩家一起喝一口水。' },
-            { id: 76, category: '互动惩罚', title: '自摸共饮', text: '只要有人自摸胡牌，其他三名对手必须喝完杯子里剩余的水。' },
-            { id: 80, category: '互动惩罚', title: '寂静领域', text: '本局内不能说话，每说一个字（除报牌名外）喝一口水。' },
-            { id: 83, category: '互动惩罚', title: '万众瞩目', text: '有人打出红中，全场玩家必须立即起立再坐下。' },
-            
-            { id: 84, category: '特殊规则', title: '三饼禁胡', text: '牌里有三饼不能胡。(做清一色时，禁胡牌如果是唯一花色，不触发禁胡惩罚)' },
-            { id: 89, category: '特殊规则', title: '清一色胡牌', text: '胡牌方式：清一色（同一花色）。' },
-            { id: 93, category: '特殊规则', title: '一万癞子', text: '本局你摸到的一万可以充当癞子（仅限一张，多余摸到只能当普通牌）。' },
-            { id: 98, category: '特殊规则', title: '听牌废牌交换', text: '报听牌后，每当摸到一张废牌可以随机与一人交换牌，也可不换(仅能交换 1 次)。' }
-        ];
+          {
+                    "id": 1,
+                    "category": "操作/收益特权",
+                    "title": "早鸟红利",
+                    "text": "本局前5轮内胡牌，得分翻倍。"
+          },
+          {
+                    "id": 2,
+                    "category": "操作/收益特权",
+                    "title": "大器晚成",
+                    "text": "牌墙最后10张牌内胡牌，得分翻3倍。"
+          },
+          {
+                    "id": 3,
+                    "category": "操作/收益特权",
+                    "title": "定向搜索",
+                    "text": "摸牌前喊出一个花色，摸到该花色额外得1分。"
+          },
+          {
+                    "id": 4,
+                    "category": "操作/收益特权",
+                    "title": "黄金右手",
+                    "text": "每轮摸牌可二选一摸牌，多余牌回底。"
+          },
+          {
+                    "id": 5,
+                    "category": "操作/收益特权",
+                    "title": "开局洗牌",
+                    "text": "发完初始手牌，最多换掉3张不想要的手牌。"
+          },
+          {
+                    "id": 6,
+                    "category": "操作/收益特权",
+                    "title": "强制交换",
+                    "text": "本局1次机会，与任意对手盲交换1张手牌。"
+          },
+          {
+                    "id": 7,
+                    "category": "操作/收益特权",
+                    "title": "弃牌回收",
+                    "text": "1次机会从弃牌堆捡回1张牌，需同步打出1张手牌置换。"
+          },
+          {
+                    "id": 8,
+                    "category": "操作/收益特权",
+                    "title": "牌墙探子",
+                    "text": "随时查看牌墙最上方即将摸到的3张牌，不可打乱顺序。"
+          },
+          {
+                    "id": 9,
+                    "category": "操作/收益特权",
+                    "title": "绝对防御",
+                    "text": "开局前3圈，自身打出所有牌对手不能吃、碰、胡。"
+          },
+          {
+                    "id": 10,
+                    "category": "操作/收益特权",
+                    "title": "自摸豁免",
+                    "text": "其他玩家自摸胡牌，无需支付分值，由剩余两名输家全额代付。"
+          },
+          {
+                    "id": 11,
+                    "category": "操作/收益特权",
+                    "title": "禁区锁定",
+                    "text": "指定一名对手，对方打出的牌自己均可吃/碰；自己打出的牌该对手无法吃碰胡。"
+          },
+          {
+                    "id": 12,
+                    "category": "操作/收益特权",
+                    "title": "反弹护盾",
+                    "text": "对手碰走自己打出的牌，对方立即支付1分。"
+          },
+          {
+                    "id": 13,
+                    "category": "操作/收益特权",
+                    "title": "杠牌无效",
+                    "text": "本局全场所有杠牌不产生即时分数结算。"
+          },
+          {
+                    "id": 14,
+                    "category": "操作/收益特权",
+                    "title": "剩余扫描",
+                    "text": "可询问场上任意一张牌是否在其他玩家手牌内。"
+          },
+          {
+                    "id": 15,
+                    "category": "操作/收益特权",
+                    "title": "花色侦测",
+                    "text": "指定一名对手，对方必须告知手中数量最多的花色。"
+          },
+          {
+                    "id": 16,
+                    "category": "操作/收益特权",
+                    "title": "恶意干扰",
+                    "text": "本局1次机会，强制一名对手直接跳过一整圈流程。"
+          },
+          {
+                    "id": 17,
+                    "category": "操作/收益特权",
+                    "title": "弃牌重置",
+                    "text": "摸到无用牌可弃置重新摸一张，整局仅限1次。"
+          },
+          {
+                    "id": 18,
+                    "category": "1系/幺九特权",
+                    "title": "摸到一万/一筒/一条",
+                    "text": "指尖轻敲桌面3下。"
+          },
+          {
+                    "id": 19,
+                    "category": "1系/幺九特权",
+                    "title": "摸到一万/一筒/一条",
+                    "text": "直接清除自身本局全部debuff、惩罚标记。"
+          },
+          {
+                    "id": 20,
+                    "category": "1系/幺九特权",
+                    "title": "摸到一万/一筒/一条",
+                    "text": "指定任意对手挂上灼烧debuff，对手每回合首次摸牌喝1小口，持续3轮。"
+          },
+          {
+                    "id": 21,
+                    "category": "1系/幺九特权",
+                    "title": "打出一万/一筒/一条",
+                    "text": "出牌者自行喝1小口水。"
+          },
+          {
+                    "id": 22,
+                    "category": "1系/幺九特权",
+                    "title": "打出任意幺九牌（一万/九万、一筒/九筒、一条/九条），必须念口令",
+                    "text": "幺九靠边，胡牌靠前。"
+          },
+          {
+                    "id": 23,
+                    "category": "1系/幺九特权",
+                    "title": "手牌幺九成对",
+                    "text": "拥有1次拒绝他人碰走自己出牌的权利，使用后失效。"
+          },
+          {
+                    "id": 24,
+                    "category": "1系/幺九特权",
+                    "title": "手牌一对一万+一对五万",
+                    "text": "自摸收益自动翻倍，可叠加其他收益加成。"
+          },
+          {
+                    "id": 25,
+                    "category": "1系/幺九特权",
+                    "title": "手牌1、9成对",
+                    "text": "解锁1次偷看牌堆底部4张手牌特权。"
+          },
+          {
+                    "id": 26,
+                    "category": "1系/幺九特权",
+                    "title": "打出一条（幺鸡）",
+                    "text": "全场玩家同步快速点头3次。"
+          },
+          {
+                    "id": 27,
+                    "category": "2系特权",
+                    "title": "摸到二万/二筒/二条",
+                    "text": "原地缓慢扭腰，左右各6次。"
+          },
+          {
+                    "id": 28,
+                    "category": "2系特权",
+                    "title": "摸到二万/二筒/二条",
+                    "text": "获得一轮特权翻倍buff，本轮所有换牌、偷看效果全部翻倍。"
+          },
+          {
+                    "id": 29,
+                    "category": "2系特权",
+                    "title": "摸到二筒",
+                    "text": "指定一名对手封印其1张癞子，被封印癞子只能当原牌使用，无法百搭；对手无癞子则效果作废。"
+          },
+          {
+                    "id": 30,
+                    "category": "2系特权",
+                    "title": "全局开启二筒护盾buff时，摸到二筒获得1层护盾，可抵挡换牌、偷看、封印癞子操作，单局仅生效1次。",
+                    "text": "全局开启二筒护盾buff时，摸到二筒获得1层护盾，可抵挡换牌、偷看、封印癞子操作，单局仅生效1次。"
+          },
+          {
+                    "id": 31,
+                    "category": "3系/位置换座",
+                    "title": "摸到三万/三筒/三条",
+                    "text": "起身比“三”手势静置3秒，完成后方可继续打牌。"
+          },
+          {
+                    "id": 32,
+                    "category": "3系/位置换座",
+                    "title": "摸到三万/三筒/三条",
+                    "text": "可查看牌墙顶部2张牌，挑选1张纳入手牌，剩余1张放回牌墙末尾，本回合额外打出1张牌。"
+          },
+          {
+                    "id": 33,
+                    "category": "3系/位置换座",
+                    "title": "手牌留存三筒",
+                    "text": "本局禁止胡牌；清一色筒子牌型不受本条限制。"
+          },
+          {
+                    "id": 34,
+                    "category": "3系/位置换座",
+                    "title": "手牌集齐三万、三筒、三条",
+                    "text": "可与对家互换座位，本局全程保持新座位。"
+          },
+          {
+                    "id": 35,
+                    "category": "3系/位置换座",
+                    "title": "手牌同时持有3、6、9数字牌",
+                    "text": "全场顺时针互换座位，本局固定新座位。"
+          },
+          {
+                    "id": 36,
+                    "category": "3系/位置换座",
+                    "title": "手牌集齐3、6、9全套数字牌",
+                    "text": "发起全场抽签随机更换座位，本局固定新座位。"
+          },
+          {
+                    "id": 37,
+                    "category": "3系/位置换座",
+                    "title": "全局解谜闯关buff",
+                    "text": "手牌凑齐3、6、9数字强制全场互换座位。"
+          },
+          {
+                    "id": 38,
+                    "category": "3系/位置换座",
+                    "title": "全局竞速局buff",
+                    "text": "摸到3/6/9数字牌额外摸1张、额外打出1张，技能补摸不触发本条。"
+          },
+          {
+                    "id": 39,
+                    "category": "4系/防御竞速",
+                    "title": "手牌持有四万/四筒/四条",
+                    "text": "拥有1次拒绝他人碰走自己出牌的权限，使用后失效。"
+          },
+          {
+                    "id": 40,
+                    "category": "4系/防御竞速",
+                    "title": "开局持有四筒、摸进四筒且留在手中",
+                    "text": "原地完成5个蛙跳；打出四筒直接免除惩罚。"
+          },
+          {
+                    "id": 41,
+                    "category": "4系/防御竞速",
+                    "title": "摸到四万/四筒/四条",
+                    "text": "本轮所有技能描述的“上家、下家”方向全部反转，一轮后恢复正常。"
+          },
+          {
+                    "id": 42,
+                    "category": "4系/防御竞速",
+                    "title": "摸到四万/四筒/四条",
+                    "text": "获得竞速护盾，可抵挡1次针对自身的石头剪刀布、换牌、偷看操作，单局最多触发2次。"
+          },
+          {
+                    "id": 43,
+                    "category": "5系/慢动作惩罚",
+                    "title": "摸到五万/五筒/五条",
+                    "text": "主动亮出3张手牌完整展示给下家查看。"
+          },
+          {
+                    "id": 44,
+                    "category": "5系/慢动作惩罚",
+                    "title": "摸到首张五万/五筒/五条",
+                    "text": "小声念口令“五福临门听好牌”。"
+          },
+          {
+                    "id": 45,
+                    "category": "5系/慢动作惩罚",
+                    "title": "摸到五万/五筒/五条",
+                    "text": "指定任意一名对手喝1小口水。"
+          },
+          {
+                    "id": 46,
+                    "category": "5系/慢动作惩罚",
+                    "title": "摸到五万/五筒/五条",
+                    "text": "摸牌、出牌全程使用慢动作操作。"
+          },
+          {
+                    "id": 47,
+                    "category": "5系/慢动作惩罚",
+                    "title": "摸到五万/五筒/五条",
+                    "text": "出牌动作过快，罚喝1小口水。"
+          },
+          {
+                    "id": 48,
+                    "category": "5系/慢动作惩罚",
+                    "title": "摸到五万/五筒/五条",
+                    "text": "未执行慢动作出牌，本轮禁止使用所有偷看手牌类特权。"
+          },
+          {
+                    "id": 49,
+                    "category": "5系/慢动作惩罚",
+                    "title": "摸到五万/五筒/五条",
+                    "text": "必须和任意对手各挑选1张无用手牌互换。"
+          },
+          {
+                    "id": 50,
+                    "category": "5系/慢动作惩罚",
+                    "title": "摸到五万/五筒/五条",
+                    "text": "拒绝交换手牌，惩罚为绕桌子完整走一圈。"
+          },
+          {
+                    "id": 51,
+                    "category": "5系/慢动作惩罚",
+                    "title": "打出5万时，可指定一名玩家做5个扩胸运动。",
+                    "text": "打出5万时，可指定一名玩家做5个扩胸运动。"
+          },
+          {
+                    "id": 52,
+                    "category": "6系/香蕉皮规则",
+                    "title": "手牌集齐六万、六筒、六条",
+                    "text": "本局全程不能与其他玩家对视；对局中和他人对视，罚喝1小口水。"
+          },
+          {
+                    "id": 53,
+                    "category": "6系/香蕉皮规则",
+                    "title": "摸到六万/六筒/六条",
+                    "text": "指定一名对手下一回合额外摸2张、额外打出2张，额外牌无法自摸、不连锁触发技能。"
+          },
+          {
+                    "id": 54,
+                    "category": "6系/香蕉皮规则",
+                    "title": "摸到六万/六筒/六条",
+                    "text": "下一位出牌玩家完成5次单脚跳。"
+          },
+          {
+                    "id": 55,
+                    "category": "6系/香蕉皮规则",
+                    "title": "摸到六万/六筒/六条",
+                    "text": "本轮全部摸牌、摆牌、出牌动作放慢三倍操作。"
+          },
+          {
+                    "id": 56,
+                    "category": "6系/香蕉皮规则",
+                    "title": "手牌留存六条",
+                    "text": "本局禁止自摸胡牌；清一色条子牌型豁免本条规则。"
+          },
+          {
+                    "id": 57,
+                    "category": "6系/香蕉皮规则",
+                    "title": "摸到六万/六筒/条，触发6系香蕉皮",
+                    "text": "本轮出牌全程放慢三倍。"
+          },
+          {
+                    "id": 58,
+                    "category": "7系/肢体猜牌",
+                    "title": "摸到七筒/七条/七万，可从牌堆尾部暗抽一张替换手里任意一张手牌，照常摸牌凑胡牌型。",
+                    "text": "摸到七筒/七条/七万，可从牌堆尾部暗抽一张替换手里任意一张手牌，照常摸牌凑胡牌型。"
+          },
+          {
+                    "id": 59,
+                    "category": "7系/肢体猜牌",
+                    "title": "摸到七万/七筒/七条",
+                    "text": "暗抽牌堆末尾1张手牌，替换自己手中任意1张牌，全局仅生效1次。"
+          },
+          {
+                    "id": 60,
+                    "category": "7系/肢体猜牌",
+                    "title": "摸到七万/七筒/七条",
+                    "text": "本局全员和自己对家互换1张手牌，全局生效。"
+          },
+          {
+                    "id": 61,
+                    "category": "7系/肢体猜牌",
+                    "title": "摸到七万/七筒/七条",
+                    "text": "指定下家跳过本轮摸牌流程，被指定下家额外完成5次单脚跳。"
+          },
+          {
+                    "id": 62,
+                    "category": "7系/肢体猜牌",
+                    "title": "摸到七万/七筒/七条",
+                    "text": "直接跳过自身本轮出牌阶段，本轮不摸牌、不出牌。"
+          },
+          {
+                    "id": 63,
+                    "category": "7系/肢体猜牌",
+                    "title": "摸到七万/七筒/七条",
+                    "text": "随机挑选自身一张手牌数字，肢体比划给下家猜数字。"
+          },
+          {
+                    "id": 64,
+                    "category": "7系/肢体猜牌",
+                    "title": "比划猜数字",
+                    "text": "下家猜对，出牌者免除本轮所有惩罚；下家猜错，下家原地完成5个蛙跳。"
+          },
+          {
+                    "id": 65,
+                    "category": "7系/肢体猜牌",
+                    "title": "摸到七万/七筒/七条",
+                    "text": "比划牌型（对子/刻子/顺子/金钩钓），全程肢体表演不能说话；全场参与猜测，猜对者与表演者互换1张废牌；猜错则表演者绕桌子小跑半圈。"
+          },
+          {
+                    "id": 66,
+                    "category": "7系/肢体猜牌",
+                    "title": "全局你画我猜buff",
+                    "text": "摸到7万/7筒/7条必须比划手牌数字给下家猜。"
+          },
+          {
+                    "id": 67,
+                    "category": "8系/免惩罚规则",
+                    "title": "开局自带八万、摸进八万且留于手牌",
+                    "text": "原地完成5个单脚跳；打出八万免除惩罚。"
+          },
+          {
+                    "id": 68,
+                    "category": "8系/免惩罚规则",
+                    "title": "摸到八万/八筒/八条",
+                    "text": "摸牌后全程站立打牌，直至下家完成摸牌才可坐下。"
+          },
+          {
+                    "id": 69,
+                    "category": "8系/免惩罚规则",
+                    "title": "摸到八万/八筒/八条",
+                    "text": "强制与任意对手互换水杯水量，本局不可换回。"
+          },
+          {
+                    "id": 70,
+                    "category": "8系/免惩罚规则",
+                    "title": "摸到八万/八筒/八条",
+                    "text": "直接免除自身本轮全部惩罚。"
+          },
+          {
+                    "id": 71,
+                    "category": "9系/猜拳对决",
+                    "title": "摸到九万/九筒/九条",
+                    "text": "指定任意对手进行三局两胜石头剪刀布；赢家与输家暗地互换1张手牌；输家额外喝1口水。"
+          },
+          {
+                    "id": 72,
+                    "category": "9系/猜拳对决",
+                    "title": "摸到九万/九筒/九条",
+                    "text": "接下来完整3轮全场只能打单一花色牌（万/筒/条）；打出异色牌原地完成5个深蹲。"
+          },
+          {
+                    "id": 73,
+                    "category": "9系/猜拳对决",
+                    "title": "摸到九万/九筒/九条",
+                    "text": "锁定一名对手，指定对方1张搭子作为其下一轮弃牌；指定搭子提前碰、杠、换牌离手则本条失效。"
+          },
+          {
+                    "id": 74,
+                    "category": "9系/猜拳对决",
+                    "title": "手牌集齐9万、9筒、9条三张",
+                    "text": "发起全场石头剪刀布；赢家最多挑选两名对手分别互换1张手牌；输家额外喝1口水。"
+          },
+          {
+                    "id": 75,
+                    "category": "摸牌连击机制",
+                    "title": "连续三次摸进同花色牌",
+                    "text": "本局所有收益翻倍。"
+          },
+          {
+                    "id": 76,
+                    "category": "摸牌连击机制",
+                    "title": "连续三次摸进同花色牌",
+                    "text": "本局自摸收益翻倍。"
+          },
+          {
+                    "id": 77,
+                    "category": "摸牌连击机制",
+                    "title": "连续四轮摸进同花色牌",
+                    "text": "本局自摸收益额外再加一倍。"
+          },
+          {
+                    "id": 78,
+                    "category": "摸牌连击机制",
+                    "title": "连续四轮同花色摸牌后自摸",
+                    "text": "收益额外翻倍，上限满贯。"
+          },
+          {
+                    "id": 79,
+                    "category": "摸牌连击机制",
+                    "title": "连续三轮摸不到有效搭子",
+                    "text": "下次摸牌前原地完成10个高抬腿。"
+          },
+          {
+                    "id": 80,
+                    "category": "摸牌连击机制",
+                    "title": "连续三轮摸不到有效搭子",
+                    "text": "不重复夸赞全场所有玩家手气；夸赞卡壳追加一轮全程慢动作打牌。"
+          },
+          {
+                    "id": 81,
+                    "category": "摸牌连击机制",
+                    "title": "连续两轮摸不到有效搭子",
+                    "text": "抽取麻将相关词语，肢体表演给全体玩家猜。"
+          },
+          {
+                    "id": 82,
+                    "category": "摸牌连击机制",
+                    "title": "连续三轮摸到偶数数字牌（2/4/6/8）",
+                    "text": "本轮自身免除全部肢体惩罚。"
+          },
+          {
+                    "id": 83,
+                    "category": "手牌搭子组合",
+                    "title": "手牌凑齐同花色1、4、7彩虹组合",
+                    "text": "可与任意玩家互换2张手牌；手牌不足2张则互换1张手牌。"
+          },
+          {
+                    "id": 84,
+                    "category": "手牌搭子组合",
+                    "title": "手牌拥有147彩虹组合的回合",
+                    "text": "全场玩家无法使用技能偷看自己手牌。"
+          },
+          {
+                    "id": 85,
+                    "category": "手牌搭子组合",
+                    "title": "手牌集齐147彩虹组合，可拒绝执行换牌规则，需朝窗户鞠躬三次，每一次鞠躬念台词“下把必自摸”。",
+                    "text": "手牌集齐147彩虹组合，可拒绝执行换牌规则，需朝窗户鞠躬三次，每一次鞠躬念台词“下把必自摸”。"
+          },
+          {
+                    "id": 86,
+                    "category": "手牌搭子组合",
+                    "title": "手牌凑齐同花色123、456、789三套顺子",
+                    "text": "其余玩家打出该花色牌需支付1枚筹码。"
+          },
+          {
+                    "id": 87,
+                    "category": "手牌搭子组合",
+                    "title": "手牌集齐同花色一条龙1-9顺子自摸",
+                    "text": "本局自摸收益翻倍。"
+          },
+          {
+                    "id": 88,
+                    "category": "手牌搭子组合",
+                    "title": "手牌持有万子对子",
+                    "text": "单局1次查看牌墙末尾1张牌，看完原位放回。"
+          },
+          {
+                    "id": 89,
+                    "category": "手牌搭子组合",
+                    "title": "手牌持有筒子对子",
+                    "text": "单局1次免除自身1次喝水惩罚。"
+          },
+          {
+                    "id": 90,
+                    "category": "手牌搭子组合",
+                    "title": "手牌持有条子对子",
+                    "text": "单局1次免除自身1次轻度肢体惩罚。"
+          },
+          {
+                    "id": 91,
+                    "category": "手牌搭子组合",
+                    "title": "手牌凑齐一对2加一对5双人搭档",
+                    "text": "绑定一名对手，对方所有惩罚减半。"
+          },
+          {
+                    "id": 92,
+                    "category": "手牌搭子组合",
+                    "title": "双人搭档绑定玩家自摸胡牌",
+                    "text": "绑定队友平分一半筹码收益。"
+          },
+          {
+                    "id": 93,
+                    "category": "手牌搭子组合",
+                    "title": "双人搭档绑定后全程未帮队友减免惩罚",
+                    "text": "单手打完完整一轮摸出牌流程，另一只手背身后不动。"
+          },
+          {
+                    "id": 94,
+                    "category": "手牌搭子组合",
+                    "title": "手牌集齐两副顺子",
+                    "text": "单局1次私下与对家互换1张手牌。"
+          },
+          {
+                    "id": 95,
+                    "category": "手牌搭子组合",
+                    "title": "手牌集齐三副顺子或三副刻子",
+                    "text": "单局1次与任意玩家互换2张手牌，手牌不足则下调交换数量。"
+          },
+          {
+                    "id": 96,
+                    "category": "手牌搭子组合",
+                    "title": "手牌凑齐任意一组顺子",
+                    "text": "要求上家摸牌前模仿任意一种动物叫声1次。"
+          },
+          {
+                    "id": 97,
+                    "category": "吃碰杠与动作",
+                    "title": "只要有人碰牌，自己就要做5次高抬腿。",
+                    "text": "只要有人碰牌，自己就要做5次高抬腿。"
+          },
+          {
+                    "id": 98,
+                    "category": "吃碰杠与动作",
+                    "title": "打出万子牌时，对家深蹲5次。",
+                    "text": "打出万子牌时，对家深蹲5次。"
+          },
+          {
+                    "id": 99,
+                    "category": "吃碰杠与动作",
+                    "title": "打出筒子牌时，对家深蹲5次。",
+                    "text": "打出筒子牌时，对家深蹲5次。"
+          },
+          {
+                    "id": 100,
+                    "category": "吃碰杠与动作",
+                    "title": "打出条子牌时，对家深蹲5次。",
+                    "text": "打出条子牌时，对家深蹲5次。"
+          },
+          {
+                    "id": 101,
+                    "category": "吃碰杠与动作",
+                    "title": "手牌万子/条子/筒子刻子成型，全程禁止说话交流；出牌、胡牌流程正常，违规说话立即最大化赔付三家。",
+                    "text": "手牌万子/条子/筒子刻子成型，全程禁止说话交流；出牌、胡牌流程正常，违规说话立即最大化赔付三家。"
+          },
+          {
+                    "id": 102,
+                    "category": "吃碰杠与动作",
+                    "title": "用条子/饼子/万子刻子开门，可指定一人打下一张牌一次。",
+                    "text": "用条子/饼子/万子刻子开门，可指定一人打下一张牌一次。"
+          },
+          {
+                    "id": 103,
+                    "category": "吃碰杠与动作",
+                    "title": "手里两个顺子，私下可和对家交换一张手牌一次。",
+                    "text": "手里两个顺子，私下可和对家交换一张手牌一次。"
+          },
+          {
+                    "id": 104,
+                    "category": "吃碰杠与动作",
+                    "title": "手里两个刻子，私下可和上家交换一张手牌一次。",
+                    "text": "手里两个刻子，私下可和上家交换一张手牌一次。"
+          },
+          {
+                    "id": 105,
+                    "category": "吃碰杠与动作",
+                    "title": "手里三个顺子/三刻子，私下可和任意玩家交换两张手牌。",
+                    "text": "手里三个顺子/三刻子，私下可和任意玩家交换两张手牌。"
+          },
+          {
+                    "id": 106,
+                    "category": "吃碰杠与动作",
+                    "title": "任意刻子落地亮出",
+                    "text": "本局全程禁言，违规说话1次原地完成5个深蹲。"
+          },
+          {
+                    "id": 107,
+                    "category": "吃碰杠与动作",
+                    "title": "任意刻子落地亮出",
+                    "text": "本局全程禁言，违规说话1次原地完成5个蛙跳。"
+          },
+          {
+                    "id": 108,
+                    "category": "吃碰杠与动作",
+                    "title": "任意刻子落地亮出",
+                    "text": "本局全程禁言，违规说话1次原地完成5个高抬腿。"
+          },
+          {
+                    "id": 109,
+                    "category": "吃碰杠与动作",
+                    "title": "凑齐任意数字三张刻子",
+                    "text": "完成对应数字次数深蹲（三万刻子=3个深蹲）。"
+          },
+          {
+                    "id": 110,
+                    "category": "吃碰杠与动作",
+                    "title": "每成功碰一次牌",
+                    "text": "自己与对家同步各喝1小口水。"
+          },
+          {
+                    "id": 111,
+                    "category": "吃碰杠与动作",
+                    "title": "每成功碰一次牌",
+                    "text": "与被碰玩家互换水杯摆放位置，本局不换回。"
+          },
+          {
+                    "id": 112,
+                    "category": "吃碰杠与动作",
+                    "title": "出牌被对手碰走，下次轮到自己摸牌前原地完成5个深蹲；若有人在自己摸牌前胡牌，惩罚翻倍。",
+                    "text": "出牌被对手碰走，下次轮到自己摸牌前原地完成5个深蹲；若有人在自己摸牌前胡牌，惩罚翻倍。"
+          },
+          {
+                    "id": 113,
+                    "category": "吃碰杠与动作",
+                    "title": "出牌被对手碰走，下次轮到自己摸牌前原地完成5个蛙跳；若有人在自己摸牌前胡牌，惩罚翻倍。",
+                    "text": "出牌被对手碰走，下次轮到自己摸牌前原地完成5个蛙跳；若有人在自己摸牌前胡牌，惩罚翻倍。"
+          },
+          {
+                    "id": 114,
+                    "category": "吃碰杠与动作",
+                    "title": "出牌被对手碰走，下次轮到自己摸牌前原地完成5个单脚跳；若有人在自己摸牌前胡牌，惩罚翻倍。",
+                    "text": "出牌被对手碰走，下次轮到自己摸牌前原地完成5个单脚跳；若有人在自己摸牌前胡牌，惩罚翻倍。"
+          },
+          {
+                    "id": 115,
+                    "category": "吃碰杠与动作",
+                    "title": "出牌被对手碰走，下次轮到自己摸牌前绕桌子跑5圈；若有人在自己摸牌前胡牌，惩罚翻倍。",
+                    "text": "出牌被对手碰走，下次轮到自己摸牌前绕桌子跑5圈；若有人在自己摸牌前胡牌，惩罚翻倍。"
+          },
+          {
+                    "id": 116,
+                    "category": "吃碰杠与动作",
+                    "title": "无碰胡牌深蹲惩罚",
+                    "text": "本局自身全程未碰牌但成功胡牌，其余有碰牌行为玩家做5个深蹲；若自摸，全场惩罚翻倍。"
+          },
+          {
+                    "id": 117,
+                    "category": "吃碰杠与动作",
+                    "title": "无碰胡牌蛙跳惩罚",
+                    "text": "本局自身全程未碰牌但成功胡牌，其余有碰牌行为玩家做5个蛙跳；若自摸，全场惩罚翻倍。"
+          },
+          {
+                    "id": 118,
+                    "category": "吃碰杠与动作",
+                    "title": "无碰胡牌单脚跳惩罚",
+                    "text": "本局自身全程未碰牌但成功胡牌，其余有碰牌行为玩家做5个单脚跳；若自摸，全场惩罚翻倍。"
+          },
+          {
+                    "id": 119,
+                    "category": "吃碰杠与动作",
+                    "title": "暗杠操作",
+                    "text": "本局获得1次拒绝他人碰走自身出牌的权限。"
+          },
+          {
+                    "id": 120,
+                    "category": "吃碰杠与动作",
+                    "title": "完成暗杠",
+                    "text": "与下家互相完整查看双方手牌3秒，仅观看不可交换。"
+          },
+          {
+                    "id": 121,
+                    "category": "吃碰杠与动作",
+                    "title": "暗杠完成后开启红箱特权①",
+                    "text": "免费偷看任意对手2张手牌。"
+          },
+          {
+                    "id": 122,
+                    "category": "吃碰杠与动作",
+                    "title": "暗杠完成后开启红箱特权②",
+                    "text": "直接免除自身1次任意惩罚。"
+          },
+          {
+                    "id": 123,
+                    "category": "吃碰杠与动作",
+                    "title": "暗杠完成后开启红箱特权③",
+                    "text": "替换手中1张无用废牌。"
+          },
+          {
+                    "id": 124,
+                    "category": "吃碰杠与动作",
+                    "title": "每次开明杠可摇骰子抽取1张命运卡",
+                    "text": "①免费和任意玩家互换2张手牌；②交出手中全部癞子，无癞子则原地完成10个深蹲；③本局自摸收益翻倍；④全员开启一轮石头剪刀布，输家一次性喝2小口水；⑤直接免除自身1次任意惩罚；⑥直接跳过1轮摸牌出牌。"
+          },
+          {
+                    "id": 125,
+                    "category": "吃碰杠与动作",
+                    "title": "开明杠、暗杠时，必须念口令“杠上开花，财源到家”；漏说口令起身绕桌子完整走一圈。",
+                    "text": "开明杠、暗杠时，必须念口令“杠上开花，财源到家”；漏说口令起身绕桌子完整走一圈。"
+          },
+          {
+                    "id": 126,
+                    "category": "吃碰杠与动作",
+                    "title": "杠牌漏说专属口令",
+                    "text": "先执行基础惩罚，补喊口令后正常杠尾补牌。"
+          },
+          {
+                    "id": 127,
+                    "category": "吃碰杠与动作",
+                    "title": "任意开杠（明杠/暗杠）",
+                    "text": "其余三名玩家各喝1小口水。"
+          },
+          {
+                    "id": 128,
+                    "category": "吃碰杠与动作",
+                    "title": "完成开杠操作后，拍手打节拍连续10下。",
+                    "text": "完成开杠操作后，拍手打节拍连续10下。"
+          },
+          {
+                    "id": 129,
+                    "category": "吃碰杠与动作",
+                    "title": "全局消除挑战buff",
+                    "text": "手牌三张同数字牌，单局1次从牌墙末尾额外摸1张，本回合额外打出1张。"
+          },
+          {
+                    "id": 130,
+                    "category": "听牌与战术",
+                    "title": "玩家达成听牌状态",
+                    "text": "口头提醒全场，念口令“闭门听牌，坐等自摸”。"
+          },
+          {
+                    "id": 131,
+                    "category": "听牌与战术",
+                    "title": "听牌忘记口头提醒全场",
+                    "text": "下一回合额外摸1张牌、额外打出1张牌。"
+          },
+          {
+                    "id": 132,
+                    "category": "听牌与战术",
+                    "title": "任意玩家达成听牌",
+                    "text": "全场起立3秒统一欢呼。"
+          },
+          {
+                    "id": 133,
+                    "category": "听牌与战术",
+                    "title": "他人听牌全场欢呼阶段",
+                    "text": "所有玩家同步喝1小口水。"
+          },
+          {
+                    "id": 134,
+                    "category": "听牌与战术",
+                    "title": "金钩钓听牌成型",
+                    "text": "本局拥有1次偷看任意对手1张暗手牌的机会。"
+          },
+          {
+                    "id": 135,
+                    "category": "听牌与战术",
+                    "title": "主动报听闭门后，每摸到废牌可随机与任意玩家互换1张手牌，无次数限制。",
+                    "text": "主动报听闭门后，每摸到废牌可随机与任意玩家互换1张手牌，无次数限制。"
+          },
+          {
+                    "id": 136,
+                    "category": "听牌与战术",
+                    "title": "未主动报听但已听牌",
+                    "text": "全局有1次和他人互换手牌的权限；交换后重新确认自身是否仍听牌。"
+          },
+          {
+                    "id": 137,
+                    "category": "听牌与战术",
+                    "title": "报听后发起石头剪刀布挑战对手，获胜可等量互换2张手牌。",
+                    "text": "报听后发起石头剪刀布挑战对手，获胜可等量互换2张手牌。"
+          },
+          {
+                    "id": 138,
+                    "category": "听牌与战术",
+                    "title": "听牌成型后每打出一张牌，按顺序数1、2、3；漏数/数错数字罚喝2小口水。",
+                    "text": "听牌成型后每打出一张牌，按顺序数1、2、3；漏数/数错数字罚喝2小口水。"
+          },
+          {
+                    "id": 139,
+                    "category": "听牌与战术",
+                    "title": "听牌成型后每打出一张牌，按顺序数1、2、3；漏数/数错数字本轮所有换牌特权全部失效。",
+                    "text": "听牌成型后每打出一张牌，按顺序数1、2、3；漏数/数错数字本轮所有换牌特权全部失效。"
+          },
+          {
+                    "id": 140,
+                    "category": "听牌与战术",
+                    "title": "听牌后每次出牌思考时长不能超过8秒；超时随机打出自身1张手牌，不可更改。",
+                    "text": "听牌后每次出牌思考时长不能超过8秒；超时随机打出自身1张手牌，不可更改。"
+          },
+          {
+                    "id": 141,
+                    "category": "听牌与战术",
+                    "title": "凑齐碰碰胡牌型，打牌全程双脚并拢落座。",
+                    "text": "凑齐碰碰胡牌型，打牌全程双脚并拢落座。"
+          },
+          {
+                    "id": 142,
+                    "category": "听牌与战术",
+                    "title": "金钩钓听牌后自摸胡牌",
+                    "text": "基础自摸收益翻倍。"
+          },
+          {
+                    "id": 143,
+                    "category": "听牌与战术",
+                    "title": "手牌凑齐清一色，每摸一张该花色以外的牌需做2个深蹲。",
+                    "text": "手牌凑齐清一色，每摸一张该花色以外的牌需做2个深蹲。"
+          },
+          {
+                    "id": 144,
+                    "category": "听牌与战术",
+                    "title": "一旦宣布听牌，必须保持站立姿势打完剩余对局。",
+                    "text": "一旦宣布听牌，必须保持站立姿势打完剩余对局。"
+          },
+          {
+                    "id": 145,
+                    "category": "癞子百搭特权",
+                    "title": "一万癞子",
+                    "text": "本局摸到的一万可充当癞子（仅限一张，多余一万仅作普通牌）。"
+          },
+          {
+                    "id": 146,
+                    "category": "癞子百搭特权",
+                    "title": "二条癞子",
+                    "text": "本局摸到的二条可充当癞子（仅限一张，多余二条仅作普通牌）。"
+          },
+          {
+                    "id": 147,
+                    "category": "癞子百搭特权",
+                    "title": "五饼癞子",
+                    "text": "本局摸到的五饼可充当癞子（仅限一张，多余五饼仅作普通牌）。"
+          },
+          {
+                    "id": 148,
+                    "category": "癞子百搭特权",
+                    "title": "摸到癞子，原地做5个深蹲再继续打牌；主动打出癞子可跳过该惩罚。",
+                    "text": "摸到癞子，原地做5个深蹲再继续打牌；主动打出癞子可跳过该惩罚。"
+          },
+          {
+                    "id": 149,
+                    "category": "癞子百搭特权",
+                    "title": "摸到癞子牌",
+                    "text": "原地金鸡独立15秒，双手平举不扶桌椅。"
+          },
+          {
+                    "id": 150,
+                    "category": "癞子百搭特权",
+                    "title": "正常摸牌摸到癞子",
+                    "text": "摇骰子抽取1张扭蛋卡；技能额外补摸癞子不触发本条：①②可与任意玩家互换2张手牌，手牌不足则下调交换数量；③④全场开启一轮石头剪刀布；⑤⑥指定自身1张搭子为本回合/下一回合弃牌，不能额外丢牌。"
+          },
+          {
+                    "id": 151,
+                    "category": "癞子百搭特权",
+                    "title": "手牌同时持有两张癞子",
+                    "text": "指定任意对手完成一项小惩罚；对方拒绝则赔付1个筹码。"
+          },
+          {
+                    "id": 152,
+                    "category": "癞子百搭特权",
+                    "title": "主动打出癞子后",
+                    "text": "立刻与下家开启石头剪刀布；获胜互换2张手牌；落败原地完成5次深蹲。"
+          },
+          {
+                    "id": 153,
+                    "category": "癞子百搭特权",
+                    "title": "摸到癞子触发表情挑战①",
+                    "text": "接下来三轮摸出牌全程保持露齿笑；被抓到表情失控罚喝1小口水。"
+          },
+          {
+                    "id": 154,
+                    "category": "癞子百搭特权",
+                    "title": "摸到癞子触发表情挑战②",
+                    "text": "接下来三轮摸出牌全程保持露齿笑；被抓到表情失控本轮全程慢动作出牌。"
+          },
+          {
+                    "id": 155,
+                    "category": "癞子百搭特权",
+                    "title": "石头剪刀布对局输掉，自身持有癞子",
+                    "text": "封印1张癞子至本局结束，仅能作本牌，无法百搭。"
+          },
+          {
+                    "id": 156,
+                    "category": "癞子百搭特权",
+                    "title": "对手摸牌结束后，可猜测对方手牌是否持有癞子；猜对互换1张手牌；猜错原地完成5个深蹲。",
+                    "text": "对手摸牌结束后，可猜测对方手牌是否持有癞子；猜对互换1张手牌；猜错原地完成5个深蹲。"
+          },
+          {
+                    "id": 157,
+                    "category": "癞子百搭特权",
+                    "title": "癞子改良七对成型规则",
+                    "text": "6组对子+1单牌+1癞子，癞子与单牌组成第七对合计14张牌；该牌型自摸，其余玩家统一完成5个深蹲。"
+          },
+          {
+                    "id": 158,
+                    "category": "癞子百搭特权",
+                    "title": "癞子作为百搭完成合法自摸",
+                    "text": "收益额外翻倍，上限满贯。"
+          },
+          {
+                    "id": 159,
+                    "category": "癞子百搭特权",
+                    "title": "无癞子挑战胡牌（癞子仅作本牌、不百搭）",
+                    "text": "自摸收益翻三倍。"
+          },
+          {
+                    "id": 160,
+                    "category": "癞子百搭特权",
+                    "title": "全局无癞子挑战buff",
+                    "text": "本局癞子仅能作为本牌使用，不可百搭替代数字牌。"
+          },
+          {
+                    "id": 161,
+                    "category": "胡牌限定模式",
+                    "title": "全带幺胡牌",
+                    "text": "所有顺子、刻子、杠、将牌全部包含数字1或9，癞子百搭时仅能替代1/9；该牌型自摸收益翻三倍，其余玩家各喝1小口水。"
+          },
+          {
+                    "id": 162,
+                    "category": "胡牌限定模式",
+                    "title": "全带幺胡牌自摸",
+                    "text": "下一局自身所有肢体惩罚数量减半。"
+          },
+          {
+                    "id": 163,
+                    "category": "胡牌限定模式",
+                    "title": "三门齐胡牌（手牌同时含万、筒、条）",
+                    "text": "自摸收益翻倍。"
+          },
+          {
+                    "id": 164,
+                    "category": "胡牌限定模式",
+                    "title": "三色同刻自摸（同数字万筒条三刻子）",
+                    "text": "自摸收益额外增加一倍。"
+          },
+          {
+                    "id": 165,
+                    "category": "胡牌限定模式",
+                    "title": "本局持有暗杠且最终自摸",
+                    "text": "自摸收益额外增加一倍。"
+          },
+          {
+                    "id": 166,
+                    "category": "胡牌限定模式",
+                    "title": "玩家无赖子自摸胡牌后",
+                    "text": "可指定任意两名玩家互换座位，本局固定新座位。"
+          },
+          {
+                    "id": 167,
+                    "category": "胡牌限定模式",
+                    "title": "自摸胡牌结算前",
+                    "text": "起身绕桌子完整走一圈（王者回城）；走完全场统一喝1小口水庆祝；忘记绕桌惩罚为绕桌子走模特步完整一圈。"
+          },
+          {
+                    "id": 168,
+                    "category": "胡牌限定模式",
+                    "title": "自摸胡牌，全场齐声台词",
+                    "text": "“恭喜发财，下局轮到我”；其余三家各喝1小口水。"
+          },
+          {
+                    "id": 169,
+                    "category": "胡牌限定模式",
+                    "title": "流局无人胡牌",
+                    "text": "举杯齐声大喊“下局必胡”，全员喝1小口水。"
+          },
+          {
+                    "id": 170,
+                    "category": "胡牌限定模式",
+                    "title": "手机号胡牌规则",
+                    "text": "手牌数字对应本人手机号码+任意一对+任意数字（0为癞子）；凑齐该牌型自摸收益翻倍，上限满贯。"
+          },
+          {
+                    "id": 171,
+                    "category": "胡牌限定模式",
+                    "title": "生日数字胡牌规则",
+                    "text": "手牌数字对应出生年月日+当日月日搭配任意一对（0为癞子）；凑齐该牌型自摸收益翻倍，上限满贯。"
+          },
+          {
+                    "id": 172,
+                    "category": "胡牌限定模式",
+                    "title": "五牌限定局规则",
+                    "text": "本局自摸牌型必须同时包含五万、五筒、五条。"
+          },
+          {
+                    "id": 173,
+                    "category": "胡牌限定模式",
+                    "title": "三色限定局规则",
+                    "text": "本局自摸牌型必须同时包含万、筒、条三种花色。"
+          },
+          {
+                    "id": 174,
+                    "category": "胡牌限定模式",
+                    "title": "清一色限定局规则",
+                    "text": "本局仅同花色完整牌型允许自摸胡牌。"
+          },
+          {
+                    "id": 175,
+                    "category": "胡牌限定模式",
+                    "title": "碰碰胡限定局规则",
+                    "text": "本局仅7对、碰碰胡牌型可自摸。"
+          },
+          {
+                    "id": 176,
+                    "category": "饮水与互动惩罚",
+                    "title": "摸到中、发、白任意一张，全场玩家一起喝一口水。",
+                    "text": "摸到中、发、白任意一张，全场玩家一起喝一口水。"
+          },
+          {
+                    "id": 177,
+                    "category": "饮水与互动惩罚",
+                    "title": "打出每一张筒子牌，对家必须喝一口水。",
+                    "text": "打出每一张筒子牌，对家必须喝一口水。"
+          },
+          {
+                    "id": 178,
+                    "category": "饮水与互动惩罚",
+                    "title": "摸到5条或8条，指定任意一名对手喝一口水。",
+                    "text": "摸到5条或8条，指定任意一名对手喝一口水。"
+          },
+          {
+                    "id": 179,
+                    "category": "饮水与互动惩罚",
+                    "title": "自摸共饮",
+                    "text": "有人自摸胡牌，其他三名对手喝完杯子里剩余全部水（开局所有人水杯水量统一）。"
+          },
+          {
+                    "id": 180,
+                    "category": "饮水与互动惩罚",
+                    "title": "边张补给",
+                    "text": "有人打出1万、1筒或1条，自己喝一口水。"
+          },
+          {
+                    "id": 181,
+                    "category": "饮水与互动惩罚",
+                    "title": "双人对酌",
+                    "text": "每碰牌一次，和对家一起喝一口水。"
+          },
+          {
+                    "id": 182,
+                    "category": "饮水与互动惩罚",
+                    "title": "寂静领域",
+                    "text": "本局不能说话，每说一个字（报牌名除外）喝一口水。"
+          },
+          {
+                    "id": 183,
+                    "category": "饮水与互动惩罚",
+                    "title": "时空定格",
+                    "text": "别人出牌期间自身身体完全不动，直到轮到自己摸牌；乱动一次罚1口水。"
+          },
+          {
+                    "id": 184,
+                    "category": "饮水与互动惩罚",
+                    "title": "金鸡点头",
+                    "text": "有人打出幺鸡，全场玩家一起快速点头3次。"
+          },
+          {
+                    "id": 185,
+                    "category": "饮水与互动惩罚",
+                    "title": "万众瞩目",
+                    "text": "有人打出红中，全场玩家必须立即起立再坐下。"
+          },
+          {
+                    "id": 186,
+                    "category": "饮水与互动惩罚",
+                    "title": "禁言出声深蹲惩罚",
+                    "text": "全程禁止说话交流，出声一次5个深蹲。"
+          },
+          {
+                    "id": 187,
+                    "category": "饮水与互动惩罚",
+                    "title": "禁言出声蛙跳惩罚",
+                    "text": "全程禁止说话交流，出声一次5个蛙跳。"
+          },
+          {
+                    "id": 188,
+                    "category": "饮水与互动惩罚",
+                    "title": "禁言出声高抬腿惩罚",
+                    "text": "全程禁止说话交流，出声一次5个高抬腿。"
+          },
+          {
+                    "id": 189,
+                    "category": "饮水与互动惩罚",
+                    "title": "全局反向喝水buff",
+                    "text": "本局全部喝水规则效果反转。"
+          },
+          {
+                    "id": 190,
+                    "category": "饮水与互动惩罚",
+                    "title": "全局运动减半buff",
+                    "text": "本局所有深蹲、蛙跳、单脚跳类肢体惩罚数量统一减半。"
+          },
+          {
+                    "id": 191,
+                    "category": "口令与姿势契约",
+                    "title": "摸牌前必须大喊特定咒语（如意如意），忘记喊则深蹲1个。",
+                    "text": "摸牌前必须大喊特定咒语（如意如意），忘记喊则深蹲1个。"
+          },
+          {
+                    "id": 192,
+                    "category": "口令与姿势契约",
+                    "title": "左手契约",
+                    "text": "全程必须使用左手打牌；换手一次做3个深蹲。"
+          },
+          {
+                    "id": 193,
+                    "category": "口令与姿势契约",
+                    "title": "铁面无私",
+                    "text": "本局不准露出笑容，笑一次做5个深蹲。"
+          },
+          {
+                    "id": 194,
+                    "category": "口令与姿势契约",
+                    "title": "败者疾驰",
+                    "text": "本局结束，输分最多玩家绕桌跑3圈。"
+          },
+          {
+                    "id": 195,
+                    "category": "口令与姿势契约",
+                    "title": "每轮到自身摸牌前，必须念口令“今日必自摸，把把好牌来”，否则不能摸牌。",
+                    "text": "每轮到自身摸牌前，必须念口令“今日必自摸，把把好牌来”，否则不能摸牌。"
+          },
+          {
+                    "id": 196,
+                    "category": "口令与姿势契约",
+                    "title": "摸牌前念错口令",
+                    "text": "本轮全程播音腔播报打出的每一张牌。"
+          },
+          {
+                    "id": 197,
+                    "category": "口令与姿势契约",
+                    "title": "对家刚打出牌的瞬间，立刻接台词",
+                    "text": "“这张牌我不要，好运留给我”；漏说/说错站立打牌至下一轮摸牌。"
+          },
+          {
+                    "id": 198,
+                    "category": "口令与姿势契约",
+                    "title": "睦邻友好",
+                    "text": "摸牌前必须夸奖下家一句（话术不重复），不夸不准摸牌。"
+          },
+          {
+                    "id": 199,
+                    "category": "口令与姿势契约",
+                    "title": "摸牌前忘记夸奖下家",
+                    "text": "本轮全程播音腔播报自己打出的每一张牌；漏读任意一张喝1口水。"
+          },
+          {
+                    "id": 200,
+                    "category": "口令与姿势契约",
+                    "title": "其他玩家出牌阶段，自身身体不能晃动、挪动桌椅；乱动一次罚喝1小口水。",
+                    "text": "其他玩家出牌阶段，自身身体不能晃动、挪动桌椅；乱动一次罚喝1小口水。"
+          },
+          {
+                    "id": 201,
+                    "category": "口令与姿势契约",
+                    "title": "全局反向口令buff",
+                    "text": "对局禁止使用吉祥摸牌台词，仅可使用反向搞笑吐槽台词。"
+          },
+          {
+                    "id": 202,
+                    "category": "猜拳博弈互动",
+                    "title": "任意全场石头剪刀布对局，所有输家统一喝1小口水。",
+                    "text": "任意全场石头剪刀布对局，所有输家统一喝1小口水。"
+          },
+          {
+                    "id": 203,
+                    "category": "猜拳博弈互动",
+                    "title": "三局两胜石头剪刀布对局获胜者",
+                    "text": "与对手互换1张手牌；平局双方各喝1小口水；落败者若持有癞子则封印1张癞子本局不可百搭，无癞子原地完成8次开合跳。"
+          },
+          {
+                    "id": 204,
+                    "category": "猜拳博弈互动",
+                    "title": "主动发起石头剪刀布挑战对手，获胜可查看对方手牌3秒；平局罚喝2小口水；输掉罚喝2小口水。",
+                    "text": "主动发起石头剪刀布挑战对手，获胜可查看对方手牌3秒；平局罚喝2小口水；输掉罚喝2小口水。"
+          },
+          {
+                    "id": 205,
+                    "category": "猜拳博弈互动",
+                    "title": "全局自由剪刀布buff",
+                    "text": "每名玩家每一轮最多主动发起1次石头剪刀布挑战。"
+          },
+          {
+                    "id": 206,
+                    "category": "轮次换牌与积分",
+                    "title": "完整打完一轮全体摸牌流程后，所有人跟下家互换1张手牌；对局出现碰、杠重置轮次计数，最多连续换3轮。",
+                    "text": "完整打完一轮全体摸牌流程后，所有人跟下家互换1张手牌；对局出现碰、杠重置轮次计数，最多连续换3轮。"
+          },
+          {
+                    "id": 207,
+                    "category": "轮次换牌与积分",
+                    "title": "完整打完一轮全体摸牌流程后，所有人和上家互换1张手牌；对局出现碰、杠重置轮次计数，最多连续换3轮。",
+                    "text": "完整打完一轮全体摸牌流程后，所有人和上家互换1张手牌；对局出现碰、杠重置轮次计数，最多连续换3轮。"
+          },
+          {
+                    "id": 208,
+                    "category": "轮次换牌与积分",
+                    "title": "消耗1枚筹码贿赂",
+                    "text": "强制与任意对手互换1张手牌，单局仅可使用1次。"
+          },
+          {
+                    "id": 209,
+                    "category": "轮次换牌与积分",
+                    "title": "庄家连续摸到两张无用手牌打出后，单局1次特权",
+                    "text": "额外从牌墙末尾摸1张牌后打出一张。"
+          },
+          {
+                    "id": 210,
+                    "category": "轮次换牌与积分",
+                    "title": "全局积分兑换buff",
+                    "text": "每首次组成一组顺子获得1积分，拆散重组不计分；积分满5分兑换1次任意惩罚豁免权，单局最多兑换3次。"
+          },
+          {
+                    "id": 211,
+                    "category": "隐藏身份与任务",
+                    "title": "庄家时刻",
+                    "text": "庄家连续摸两把没用废牌，本轮可以和上家更换第二张废牌一次。"
+          },
+          {
+                    "id": 212,
+                    "category": "隐藏身份与任务",
+                    "title": "平民隐藏任务",
+                    "text": "本局全程不碰、不杠，仅靠摸牌听牌后自摸，收益翻倍。"
+          },
+          {
+                    "id": 213,
+                    "category": "隐藏身份与任务",
+                    "title": "卧底任务",
+                    "text": "本局必须碰、杠；全程无碰无杠，给上一把自摸玩家轻柔捶背捏肩15秒。"
+          },
+          {
+                    "id": 214,
+                    "category": "隐藏身份与任务",
+                    "title": "守卫buff",
+                    "text": "整局仅锁定一名玩家全程保护，被保护玩家所有肢体惩罚数量减半。"
+          },
+          {
+                    "id": 215,
+                    "category": "毒圈终局阶段",
+                    "title": "牌库剩余20张进入吃鸡毒圈",
+                    "text": "每回合优先打出幺九牌；无法打出原地完成5个深蹲。"
+          },
+          {
+                    "id": 216,
+                    "category": "毒圈终局阶段",
+                    "title": "全局吃鸡毒圈buff",
+                    "text": "牌库剩余15张强制优先打出幺九牌，违规深蹲5个。"
+          },
+          {
+                    "id": 217,
+                    "category": "毒圈终局阶段",
+                    "title": "牌库剩余10张进入飞行棋终点圈①",
+                    "text": "每回合优先打出偶数数字牌；无法打出原地高抬腿8次。"
+          },
+          {
+                    "id": 218,
+                    "category": "毒圈终局阶段",
+                    "title": "牌库剩余10张进入飞行棋终点圈②",
+                    "text": "每回合优先打出偶数数字牌；无法打出本轮手牌不能使用癞子凑搭子。"
+          },
+          {
+                    "id": 219,
+                    "category": "毒圈终局阶段",
+                    "title": "全局飞行棋终点buff",
+                    "text": "牌库剩余10张强制优先打出偶数牌，违规高抬腿8个。"
+          },
+          {
+                    "id": 220,
+                    "category": "全局Buff与模式",
+                    "title": "全局半蹲对局buff①",
+                    "text": "全局半蹲对局，违规靠墙静蹲10秒，后背贴墙、膝盖不超脚尖。"
+          },
+          {
+                    "id": 221,
+                    "category": "全局Buff与模式",
+                    "title": "全局半蹲对局buff②",
+                    "text": "仅轮到自身摸牌前半蹲3秒，其余时间可正常落座打牌。"
+          },
+          {
+                    "id": 222,
+                    "category": "全局Buff与模式",
+                    "title": "全局静音buff①",
+                    "text": "全局不能笑、不能发出声音，违规全程固定单手，中途不可换手。"
+          },
+          {
+                    "id": 223,
+                    "category": "全局Buff与模式",
+                    "title": "全局静音buff②",
+                    "text": "对局全程禁止说话，出牌仅能用拍手示意。"
+          },
+          {
+                    "id": 224,
+                    "category": "全局Buff与模式",
+                    "title": "全局单手对局buff",
+                    "text": "本局全程仅允许单只手完成摸牌、理牌、出牌操作。"
+          },
+          {
+                    "id": 225,
+                    "category": "全局Buff与模式",
+                    "title": "全局反向摸牌buff",
+                    "text": "摸牌只能抓取牌堆末尾手牌；摸前端牌原地完成10个高抬腿。"
+          },
+          {
+                    "id": 226,
+                    "category": "全局Buff与模式",
+                    "title": "全局猜牌博弈buff",
+                    "text": "每轮摸完牌后可猜测对手手牌是否持有癞子。"
+          },
+          {
+                    "id": 227,
+                    "category": "全局Buff与模式",
+                    "title": "全局盲盒命运buff",
+                    "text": "仅正常摸到癞子可抽取扭蛋卡，技能额外摸癞子不触发。"
+          },
+          {
+                    "id": 228,
+                    "category": "全局Buff与模式",
+                    "title": "全局UNO全套buff",
+                    "text": "4系反转、7系跳过、6系罚摸、9系变色所有数字规则全部生效。"
+          },
+          {
+                    "id": 229,
+                    "category": "全局Buff与模式",
+                    "title": "全局马里奥道具buff",
+                    "text": "1系火花、2系蘑菇、7系管道、8系星星全部道具规则生效。"
+          },
+          {
+                    "id": 230,
+                    "category": "全局Buff与模式",
+                    "title": "全局竞速道具buff",
+                    "text": "3系氮气、6系香蕉皮、9系导弹、4系护盾全部竞速规则生效。"
+          },
+          {
+                    "id": 231,
+                    "category": "全局Buff与模式",
+                    "title": "全局消消乐buff",
+                    "text": "两连消废牌、三连全员喝水、四连收益翻倍规则全部生效。"
+          },
+          {
+                    "id": 232,
+                    "category": "全局Buff与模式",
+                    "title": "全局音游节奏buff",
+                    "text": "全体出牌必须匀速卡点，速度过快罚喝水1小口。"
+          },
+          {
+                    "id": 233,
+                    "category": "犯错惩罚机制",
+                    "title": "玩家出现规则错误时①",
+                    "text": "犯错玩家对每一位在场玩家说3句麻将吉祥话。"
+          },
+          {
+                    "id": 234,
+                    "category": "犯错惩罚机制",
+                    "title": "玩家出现规则错误时②",
+                    "text": "摇骰子判定惩罚：1=罚喝1小口水；2=原地完成5次轻量深蹲；3=与上家互换1张手牌；4=绕桌子走一圈；5=模仿任意一种动物完整叫声，持续3秒；6=直接豁免本次全部惩罚。"
+          },
+          {
+                    "id": 235,
+                    "category": "特殊玩法机制",
+                    "title": "我不想打",
+                    "text": "可指定一人替自己出牌一次，代出牌玩家可多摸1张牌。"
+          },
+          {
+                    "id": 236,
+                    "category": "特殊玩法机制",
+                    "title": "输家尊严",
+                    "text": "只要上听不需要支付筹码。"
+          },
+          {
+                    "id": 237,
+                    "category": "特殊玩法机制",
+                    "title": "抽条再指定",
+                    "text": "再抽一张纸条或者掷骰子指定一位玩家再抽一张纸条。"
+          },
+          {
+                    "id": 238,
+                    "category": "特殊玩法机制",
+                    "title": "闭眼摸手牌猜花色、数字",
+                    "text": "猜对可与任意一名玩家换一张手牌；猜错做5个开合跳，该手牌不可移动。"
+          }
+];
 
         const { createApp, ref, reactive, computed, onMounted } = Vue;
+
+        // PeerJS Config using Google STUN for better NAT traversal
+        const PEER_CONFIG = {
+            config: {
+                iceServers: [
+                    { urls: 'stun:stun.l.google.com:19302' },
+                    { urls: 'stun:stun1.l.google.com:19302' },
+                    { urls: 'stun:stun2.l.google.com:19302' }
+                ]
+            }
+        };
 
         createApp({
             setup() {
@@ -310,96 +1699,222 @@
                 const mode = ref('create');
                 const playerName = ref('');
                 const joinRoomId = ref('');
-                const isLoading = ref(false);
+                
+                const isLoading = ref(true);
+                const loadingText = ref('加载中...');
+                const notifications = ref([]);
 
                 const room = ref(null);
                 const playerInfo = ref(null);
                 const showSettleModal = ref(false);
                 const adjustments = reactive({});
+                
+                let availableRules = [...MAHJONG_RULES];
+                let toastId = 0;
 
                 let peer = null;
-                let connections = []; // For host to store clients, or for client to store host connection
+                let connections = []; // Array of connections
+
+                const showToast = (text) => {
+                    const id = toastId++;
+                    notifications.value.push({ id, text });
+                    setTimeout(() => {
+                        notifications.value = notifications.value.filter(n => n.id !== id);
+                    }, 3000);
+                };
+
+                const saveSession = (data) => {
+                    sessionStorage.setItem('mahjong_session', JSON.stringify(data));
+                };
+                
+                const clearSession = () => {
+                    sessionStorage.removeItem('mahjong_session');
+                    sessionStorage.removeItem('mahjong_host_room');
+                    sessionStorage.removeItem('mahjong_available_rules');
+                };
+
+                const restoreHostState = () => {
+                    const storedRoom = sessionStorage.getItem('mahjong_host_room');
+                    const storedRules = sessionStorage.getItem('mahjong_available_rules');
+                    if (storedRoom) room.value = JSON.parse(storedRoom);
+                    if (storedRules) availableRules = JSON.parse(storedRules);
+                };
+                
+                const saveHostState = () => {
+                    sessionStorage.setItem('mahjong_host_room', JSON.stringify(room.value));
+                    sessionStorage.setItem('mahjong_available_rules', JSON.stringify(availableRules));
+                };
+
+                const broadcastState = () => {
+                    if (playerInfo.value?.isHost) {
+                        saveHostState();
+                        connections.forEach(conn => {
+                            if (conn.open) {
+                                // Important: Strip other players' rules before sending to a client
+                                const stateForClient = JSON.parse(JSON.stringify(room.value));
+                                stateForClient.players.forEach(p => {
+                                    if (p.name !== conn.metadata?.name) {
+                                        p.currentRule = null;
+                                    }
+                                });
+                                conn.send({ type: 'STATE_UPDATE', room: stateForClient });
+                            }
+                        });
+                    }
+                };
+
+                // Helper Computed Properties for Game UI
+                const myPlayer = computed(() => {
+                    if (!room.value || !playerInfo.value) return {};
+                    return room.value.players.find(p => p.name === playerInfo.value.name) || {};
+                });
+                
+                const otherPlayers = computed(() => {
+                    if (!room.value || !playerInfo.value) return [];
+                    return room.value.players.filter(p => p.name !== playerInfo.value.name) || [];
+                });
 
                 onMounted(() => {
+                    const sessionData = JSON.parse(sessionStorage.getItem('mahjong_session') || 'null');
                     const urlParams = new URLSearchParams(window.location.search);
                     const queryRoomId = urlParams.get('room');
-                    if (queryRoomId) {
+
+                    if (sessionData) {
+                        if (queryRoomId && sessionData.roomId !== queryRoomId.toUpperCase()) {
+                            // URL params take precedence, but if mismatch, clear session
+                            clearSession();
+                            joinRoomId.value = queryRoomId.toUpperCase();
+                            mode.value = 'join';
+                            isLoading.value = false;
+                        } else {
+                            playerName.value = sessionData.name;
+                            if (sessionData.isHost) {
+                                initHost(sessionData.name, sessionData.roomId);
+                            } else {
+                                initClient(sessionData.roomId, sessionData.name);
+                            }
+                        }
+                    } else if (queryRoomId) {
                         joinRoomId.value = queryRoomId.toUpperCase();
                         mode.value = 'join';
+                        isLoading.value = false;
+                    } else {
+                        isLoading.value = false;
                     }
                 });
 
                 // ==================== [HOST LOGIC] ====================
-                const initHost = (name) => {
+                const initHost = (name, existingRoomId = null) => {
                     isLoading.value = true;
-                    // 生成6位房间号作为PeerID
-                    const roomId = Math.random().toString(36).substring(2, 8).toUpperCase();
-                    peer = new Peer(roomId);
+                    loadingText.value = existingRoomId ? "正在恢复房间..." : "正在建立房间...";
+                    
+                    const roomId = existingRoomId || Math.random().toString(36).substring(2, 8).toUpperCase();
+                    peer = new Peer(roomId, PEER_CONFIG);
                     
                     peer.on('open', (id) => {
                         isLoading.value = false;
-                        playerInfo.value = { id, name, isHost: true };
-                        room.value = {
-                            id: roomId,
-                            status: 'waiting',
-                            roundCount: 1,
-                            players: [ { id, name, isHost: true, pos: '東', score: 0, currentRule: null, revealed: false } ]
-                        };
-                        screen.value = 'waiting';
+                        
+                        if (existingRoomId && sessionStorage.getItem('mahjong_host_room')) {
+                            restoreHostState();
+                            playerInfo.value = { id, name, isHost: true };
+                            const hostPlayer = room.value.players.find(p => p.isHost);
+                            if (hostPlayer) hostPlayer.id = id;
+                        } else {
+                            playerInfo.value = { id, name, isHost: true };
+                            room.value = {
+                                id: roomId,
+                                status: 'waiting',
+                                roundCount: 1,
+                                players: [ { id, name, isHost: true, pos: '東', score: 0, currentRule: null, revealed: false } ]
+                            };
+                            // Randomize rules pool on creation
+                            availableRules = [...MAHJONG_RULES].sort(() => Math.random() - 0.5);
+                        }
+                        
+                        saveSession({ roomId, name, isHost: true });
+                        saveHostState();
+                        
+                        screen.value = room.value.status === 'playing' ? 'game' : 'waiting';
                         window.history.replaceState({}, '', `?room=${roomId}`);
                     });
 
                     peer.on('error', (err) => {
                         isLoading.value = false;
-                        alert('创建房间失败: ' + err.type);
-                        peer.destroy();
+                        if (err.type === 'unavailable-id') {
+                            alert('房间号异常或被占用，请解散后重新创建');
+                            clearSession();
+                            screen.value = 'setup';
+                            window.history.replaceState({}, '', location.pathname);
+                        } else {
+                            alert('创建房间失败: ' + err.type);
+                        }
                     });
 
                     peer.on('connection', (conn) => {
                         conn.on('data', (data) => {
                             if (data.type === 'JOIN') {
+                                // Check reconnect
+                                let existingPlayer = room.value.players.find(p => p.name === data.name);
+                                if (existingPlayer) {
+                                    if (existingPlayer.isHost) {
+                                        conn.send({ type: 'ERROR', message: '花名与房主冲突' });
+                                        setTimeout(() => conn.close(), 500);
+                                        return;
+                                    }
+                                    existingPlayer.id = conn.peer;
+                                    conn.metadata = { name: data.name }; // Tag connection
+                                    connections.push(conn);
+                                    conn.send({ type: 'JOIN_SUCCESS', player: existingPlayer });
+                                    showToast(`玩家 ${data.name} 重新连接`);
+                                    broadcastState();
+                                    return;
+                                }
+
                                 if (room.value.players.length >= 4 || room.value.status !== 'waiting') {
                                     conn.send({ type: 'ERROR', message: '房间已满或游戏已开始' });
                                     setTimeout(() => conn.close(), 500);
                                     return;
                                 }
+                                
                                 const posList = ['東', '南', '西', '北'];
                                 const pos = posList[room.value.players.length];
                                 const newPlayer = { id: conn.peer, name: data.name, isHost: false, pos, score: 0, currentRule: null, revealed: false };
                                 room.value.players.push(newPlayer);
+                                conn.metadata = { name: data.name };
                                 connections.push(conn);
                                 conn.send({ type: 'JOIN_SUCCESS', player: newPlayer });
+                                showToast(`玩家 ${data.name} 加入了房间`);
                                 broadcastState();
                             } else if (data.type === 'REVEAL') {
                                 const p = room.value.players.find(p => p.id === conn.peer);
-                                if (p) p.revealed = true;
-                                broadcastState();
+                                if (p) {
+                                    p.revealed = true;
+                                    broadcastState();
+                                }
                             }
                         });
                         
                         conn.on('close', () => {
-                            if (room.value && room.value.status === 'waiting') {
-                                room.value.players = room.value.players.filter(p => p.id !== conn.peer);
+                            const p = room.value.players.find(pl => pl.id === conn.peer);
+                            if (p) {
+                                showToast(`玩家 ${p.name} 断开了连接`);
+                                if (room.value.status === 'waiting') {
+                                    room.value.players = room.value.players.filter(pl => pl.id !== conn.peer);
+                                    const posList = ['東', '南', '西', '北'];
+                                    room.value.players.forEach((pl, i) => pl.pos = posList[i]);
+                                }
                                 connections = connections.filter(c => c.peer !== conn.peer);
-                                // Re-assign positions
-                                const posList = ['東', '南', '西', '北'];
-                                room.value.players.forEach((p, i) => p.pos = posList[i]);
                                 broadcastState();
                             }
                         });
-                    });
-                };
-
-                const broadcastState = () => {
-                    connections.forEach(conn => {
-                        conn.send({ type: 'STATE_UPDATE', room: JSON.parse(JSON.stringify(room.value)) });
                     });
                 };
 
                 // ==================== [CLIENT LOGIC] ====================
                 const initClient = (roomId, name) => {
                     isLoading.value = true;
-                    peer = new Peer();
+                    loadingText.value = "正在连接到房间...";
+                    peer = new Peer(undefined, PEER_CONFIG);
                     
                     peer.on('open', (id) => {
                         const conn = peer.connect(roomId, { reliable: true });
@@ -413,15 +1928,17 @@
                         conn.on('data', (data) => {
                             if (data.type === 'JOIN_SUCCESS') {
                                 playerInfo.value = data.player;
+                                saveSession({ roomId, name, isHost: false });
                                 screen.value = 'waiting';
                                 window.history.replaceState({}, '', `?room=${roomId}`);
                             } else if (data.type === 'STATE_UPDATE') {
                                 room.value = data.room;
-                                const me = data.room.players.find(p => p.id === playerInfo.value.id);
+                                const me = data.room.players.find(p => p.name === playerInfo.value.name);
                                 if (me) playerInfo.value = me;
                                 
                                 if (data.room.status === 'playing' && screen.value === 'waiting') {
                                     screen.value = 'game';
+                                    showToast('牌局已开始，请翻阅你的特殊规则');
                                 } else if (data.room.status === 'waiting' && screen.value === 'game') {
                                     screen.value = 'waiting';
                                     alert(`第 ${room.value.roundCount - 1} 局结束，回到等候室`);
@@ -429,13 +1946,16 @@
                             } else if (data.type === 'ERROR') {
                                 isLoading.value = false;
                                 alert(data.message);
+                                clearSession();
                                 peer.destroy();
+                                screen.value = 'setup';
+                                window.history.replaceState({}, '', location.pathname);
                             }
                         });
                         
                         conn.on('close', () => {
-                            alert('与房主连接断开');
-                            location.reload();
+                            showToast('房主房间已解散或网络断开，即将重连...');
+                            setTimeout(() => { location.reload(); }, 3000);
                         });
                         
                         conn.on('error', () => {
@@ -446,7 +1966,14 @@
                     
                     peer.on('error', (err) => {
                         isLoading.value = false;
-                        alert('网络连接错误: ' + err.type);
+                        if (err.type === 'peer-unavailable') {
+                            alert('房间不存在或已解散');
+                            clearSession();
+                            screen.value = 'setup';
+                            window.history.replaceState({}, '', location.pathname);
+                        } else {
+                            alert('网络连接错误: ' + err.type);
+                        }
                     });
                 };
 
@@ -464,18 +1991,26 @@
 
                 const exitRoom = () => {
                     if (confirm('确定要退出当前房间吗？')) {
+                        clearSession();
                         if (peer) peer.destroy();
-                        location.href = location.pathname; // reload without query
+                        location.href = location.pathname;
                     }
                 };
 
                 const startGame = () => {
                     if (room.value && playerInfo.value?.isHost) {
-                        const shuffled = [...MAHJONG_RULES].sort(() => Math.random() - 0.5);
-                        room.value.players.forEach((p, i) => {
-                            p.currentRule = shuffled[i];
+                        // Ensure card pool has enough cards, no duplicates inside the same run
+                        if (availableRules.length < room.value.players.length) {
+                            showToast('牌池见底，已重新洗入所有特殊规则牌');
+                            availableRules = [...MAHJONG_RULES].sort(() => Math.random() - 0.5);
+                        }
+                        
+                        room.value.players.forEach(p => {
+                            // Pop from end to ensure no duplicate assignments within available pool
+                            p.currentRule = availableRules.pop();
                             p.revealed = false;
                         });
+                        
                         room.value.status = 'playing';
                         broadcastState();
                         screen.value = 'game';
@@ -483,13 +2018,13 @@
                 };
 
                 const revealMyRule = (playerId) => {
-                    if (playerInfo.value?.id === playerId) {
-                        if (playerInfo.value.isHost) {
-                            const p = room.value.players.find(p => p.id === playerId);
-                            if (p && !p.revealed) {
-                                p.revealed = true;
-                                broadcastState();
-                            }
+                    if (myPlayer.value.id === playerId && !myPlayer.value.revealed) {
+                        myPlayer.value.revealed = true;
+                        
+                        if (playerInfo.value?.isHost) {
+                            const p = room.value.players.find(pl => pl.name === playerInfo.value.name);
+                            if (p) p.revealed = true;
+                            broadcastState();
                         } else {
                             if (connections[0]) {
                                 connections[0].send({ type: 'REVEAL' });
@@ -501,32 +2036,32 @@
                 const openSettleModal = () => {
                     if (!playerInfo.value?.isHost) return;
                     room.value.players.forEach(p => {
-                        adjustments[p.id] = 0;
+                        adjustments[p.name] = 0;
                     });
                     showSettleModal.value = true;
                 };
 
-                const changeScore = (playerId, delta) => {
-                    adjustments[playerId] += delta;
+                const changeScore = (playerNameStr, delta) => {
+                    adjustments[playerNameStr] = (adjustments[playerNameStr] || 0) + delta;
                 };
 
                 const totalAdjustment = computed(() => {
                     let total = 0;
                     for (const key in adjustments) {
-                        total += adjustments[key];
+                        total += (adjustments[key] || 0);
                     }
                     return total;
                 });
 
                 const confirmSettle = () => {
                     if (totalAdjustment.value !== 0) {
-                        if (!confirm(`账面差额为 ${totalAdjustment.value}，确定要强制结算吗？`)) {
+                        if (!confirm(`账面流水差额为 ${totalAdjustment.value}，确定要强制平账并结算吗？`)) {
                             return;
                         }
                     }
                     
                     room.value.players.forEach(p => {
-                        p.score += (adjustments[p.id] || 0);
+                        p.score += (adjustments[p.name] || 0);
                         p.currentRule = null;
                         p.revealed = false;
                     });
@@ -539,10 +2074,11 @@
                 };
 
                 return {
-                    screen, mode, playerName, joinRoomId, isLoading,
-                    room, playerInfo, showSettleModal, adjustments,
+                    screen, mode, playerName, joinRoomId, isLoading, loadingText,
+                    room, playerInfo, showSettleModal, adjustments, notifications,
                     handleCreate, handleJoin, startGame, revealMyRule, exitRoom,
-                    openSettleModal, changeScore, confirmSettle, totalAdjustment
+                    openSettleModal, changeScore, confirmSettle, totalAdjustment,
+                    myPlayer, otherPlayers
                 };
             }
         }).mount('#app');
