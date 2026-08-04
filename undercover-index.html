@@ -32,6 +32,7 @@
         .toast-enter-active, .toast-leave-active { transition: all 0.3s ease; }
         .toast-enter-from { opacity: 0; transform: translateY(-20px); }
         .toast-leave-to { opacity: 0; transform: translateY(-20px); }
+        .animate-spin-slow { animation: spin 3s linear infinite; }
     </style>
 </head>
 <body class="bg-mahjong text-slate-800 min-h-screen">
@@ -168,44 +169,169 @@
                         </div>
                         
                         <!-- Front of card -->
-                        <div class="absolute inset-0 backface-hidden rotate-y-180 bg-[#fffff8] rounded-3xl shadow-2xl p-6 flex flex-col border-[6px] border-amber-400 overflow-hidden">
-                            <div class="absolute top-0 right-0 bg-amber-400 text-amber-950 text-sm font-black px-4 py-1.5 rounded-bl-xl shadow-sm tracking-widest">
+                        <div class="absolute inset-0 backface-hidden rotate-y-180 bg-[#fffff8] rounded-3xl shadow-2xl p-5 sm:p-6 flex flex-col border-[6px] border-amber-400 overflow-hidden">
+                            <div class="absolute top-0 right-0 bg-amber-400 text-amber-950 text-xs sm:text-sm font-black px-3 sm:px-4 py-1.5 rounded-bl-xl shadow-sm tracking-widest shrink-0">
                                 {{ myPlayer.currentRule?.category }}
                             </div>
                             
-                            <div class="flex items-center gap-3 mb-4 border-b-2 border-emerald-100 pb-4 mt-4">
-                                <div class="w-12 h-12 bg-emerald-600 text-white rounded-full flex items-center justify-center text-2xl font-black shadow-inner shrink-0">{{ myPlayer.pos }}</div>
-                                <div class="text-2xl font-bold text-slate-800 truncate">{{ myPlayer.name }}</div>
+                            <div class="flex items-center gap-3 mb-2 border-b-2 border-emerald-100 pb-3 mt-3 shrink-0">
+                                <div class="w-10 h-10 sm:w-12 sm:h-12 bg-emerald-600 text-white rounded-full flex items-center justify-center text-xl sm:text-2xl font-black shadow-inner shrink-0">{{ myPlayer.pos }}</div>
+                                <div class="text-xl sm:text-2xl font-bold text-slate-800 truncate">{{ myPlayer.name }}</div>
                             </div>
                             
-                            <div class="flex-1 flex flex-col justify-center items-center text-center overflow-y-auto">
-                                <h3 class="text-4xl font-black text-red-700 mb-6 font-serif leading-tight">{{ myPlayer.currentRule?.title }}</h3>
-                                <p class="text-slate-700 text-xl leading-relaxed px-2 font-medium">{{ myPlayer.currentRule?.text }}</p>
+                            <div class="flex-1 flex flex-col justify-center items-center text-center overflow-y-auto py-2 my-auto">
+                                <h3 :class="getRuleTitleClass(myPlayer.currentRule?.title)" class="text-red-700 mb-2 font-serif font-black shrink-0 px-1">
+                                    {{ myPlayer.currentRule?.title }}
+                                </h3>
+                                <p :class="getRuleTextClass(myPlayer.currentRule?.text)" class="text-slate-800 px-1 font-medium break-words max-h-[180px] sm:max-h-[220px] overflow-y-auto w-full">
+                                    {{ myPlayer.currentRule?.text }}
+                                </p>
+                            </div>
+
+                            <!-- Redraw Skill Indicator if card has redraw skill -->
+                            <div v-if="myPlayer.revealed && hasRedrawSkill(myPlayer.currentRule)" class="mt-2 shrink-0">
+                                <button @click.stop="triggerRedrawRule(myPlayer.id)" class="w-full py-2 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white font-bold text-xs sm:text-sm rounded-xl shadow flex items-center justify-center gap-1.5 transition-transform active:scale-95">
+                                    <svg class="w-4 h-4 animate-spin-slow" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
+                                    使用【重刷/过卡牌】技能
+                                </button>
                             </div>
                             
-                            <div class="text-right text-slate-300 font-mono text-sm mt-4 font-bold shrink-0">
-                                RULE No.{{ myPlayer.currentRule?.id }}
+                            <div class="flex justify-between items-center text-xs text-slate-400 font-mono mt-2 font-bold shrink-0 pt-2 border-t border-amber-100">
+                                <span class="text-amber-700 font-bold">查看我的规则</span>
+                                <span>RULE No.{{ myPlayer.currentRule?.id }}</span>
                             </div>
                         </div>
                     </div>
                 </div>
                 
-                <!-- Other players status -->
-                <div class="w-full mt-auto bg-white/70 backdrop-blur rounded-xl p-4 shadow-sm flex flex-col gap-3 border border-emerald-100 shrink-0">
-                    <div class="text-sm font-bold text-emerald-800 mb-1 border-b border-emerald-100 pb-2 flex justify-between">
-                        <span>其他玩家状态</span>
-                        <span class="text-xs text-slate-400 font-normal">你只能看到自己的规则</span>
+                <!-- All Players Card Viewer Grid -->
+                <div class="w-full mt-auto bg-white/80 backdrop-blur rounded-2xl p-3.5 sm:p-4 shadow-sm flex flex-col gap-2.5 border border-emerald-100 shrink-0">
+                    <div class="text-sm font-bold text-emerald-800 border-b border-emerald-100 pb-2 flex justify-between items-center">
+                        <span class="flex items-center gap-1.5">
+                            <svg class="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                            全场玩家卡牌 (点击查看详情)
+                        </span>
+                        <span class="text-[11px] text-emerald-600 font-normal">点击可查阅玩家卡牌</span>
                     </div>
-                    <div class="grid grid-cols-3 gap-3">
-                        <div v-for="p in otherPlayers" :key="p.id" class="flex flex-col items-center bg-white rounded-lg p-2 shadow-sm border border-slate-100">
-                            <div class="w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm mb-1" :class="p.revealed ? 'bg-amber-100 text-amber-700' : 'bg-slate-100 text-slate-400'">{{ p.pos }}</div>
-                            <div class="text-xs font-bold text-slate-700 truncate w-full text-center">{{ p.name }}</div>
-                            <div class="text-[10px] mt-1 px-2 py-0.5 rounded-full font-bold" :class="p.revealed ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-400'">{{ p.revealed ? '已翻牌' : '未翻牌' }}</div>
+                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                        <div v-for="p in room.players" :key="p.id" 
+                             @click="inspectPlayer(p)" 
+                             class="flex flex-col bg-white hover:bg-emerald-50/70 rounded-xl p-2 sm:p-2.5 shadow-sm border transition-all cursor-pointer group active:scale-95"
+                             :class="p.name === myPlayer.name ? 'border-emerald-500 ring-2 ring-emerald-200 bg-emerald-50/40' : 'border-slate-200'">
+                            <div class="flex items-center justify-between mb-1">
+                                <div class="w-6 h-6 sm:w-7 sm:h-7 rounded-full flex items-center justify-center font-bold text-xs shadow-inner" 
+                                     :class="p.revealed ? 'bg-amber-400 text-amber-950' : 'bg-slate-200 text-slate-600'">
+                                    {{ p.pos }}
+                                </div>
+                                <div class="text-[10px] px-1.5 py-0.5 rounded-md font-bold" 
+                                     :class="p.revealed ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-500'">
+                                    {{ p.revealed ? '已翻牌' : '未翻牌' }}
+                                </div>
+                            </div>
+                            <div class="text-xs font-bold text-slate-800 truncate w-full flex items-center gap-1">
+                                <span class="truncate">{{ p.name }}</span>
+                                <span v-if="p.name === myPlayer.name" class="text-[9px] bg-emerald-600 text-white px-1 rounded shrink-0">我</span>
+                            </div>
+                            <div class="text-[11px] text-slate-500 mt-0.5 truncate">
+                                <template v-if="p.revealed && p.currentRule">
+                                    <span class="text-red-700 font-bold">《{{ p.currentRule.title }}》</span>
+                                </template>
+                                <template v-else>
+                                    <span class="italic text-slate-400">点击查看卡牌</span>
+                                </template>
+                            </div>
+                            <div v-if="p.revealed && hasRedrawSkill(p.currentRule)" class="mt-1 text-[9px] bg-purple-100 text-purple-700 font-bold px-1.5 py-0.5 rounded flex items-center gap-0.5 w-fit">
+                                <span>🔄 含重刷技能</span>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
         </main>
+
+        <!-- Detailed Player Inspection Modal -->
+        <div v-if="inspectedPlayer" class="fixed inset-0 bg-slate-900/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+            <div class="bg-white rounded-3xl shadow-2xl w-full max-w-sm sm:max-w-md overflow-hidden flex flex-col border-4 border-amber-300 max-h-[90vh]">
+                <!-- Modal Header -->
+                <div class="bg-gradient-to-r from-emerald-700 to-emerald-800 px-5 py-3.5 text-white flex justify-between items-center shrink-0">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 bg-amber-400 text-amber-950 font-black rounded-full flex items-center justify-center text-xl shadow-inner shrink-0">
+                            {{ inspectedPlayer.pos }}
+                        </div>
+                        <div>
+                            <div class="font-bold text-base sm:text-lg flex items-center gap-1.5 leading-tight">
+                                <span>{{ inspectedPlayer.name }}</span>
+                                <span v-if="inspectedPlayer.name === myPlayer.name" class="text-xs bg-emerald-500 text-white px-2 py-0.5 rounded-full font-medium">我的卡牌</span>
+                            </div>
+                            <div class="text-xs text-emerald-200 mt-0.5">
+                                当前得分: <span class="font-bold text-amber-300">{{ inspectedPlayer.score > 0 ? '+' : '' }}{{ inspectedPlayer.score }}</span>
+                            </div>
+                        </div>
+                    </div>
+                    <button @click="inspectedPlayer = null" class="w-8 h-8 rounded-full bg-white/20 hover:bg-white/30 text-white font-bold flex items-center justify-center text-lg transition-colors">
+                        ✕
+                    </button>
+                </div>
+
+                <!-- Card Body -->
+                <div class="p-5 flex-1 overflow-y-auto flex flex-col justify-between bg-[#fffff8]">
+                    <template v-if="inspectedPlayer.currentRule">
+                        <!-- Category badge & Rule ID -->
+                        <div class="flex justify-between items-center mb-2">
+                            <span class="bg-amber-100 text-amber-900 text-xs font-black px-3 py-1 rounded-full border border-amber-300">
+                                {{ inspectedPlayer.currentRule.category }}
+                            </span>
+                            <span class="text-xs font-mono text-slate-400 font-bold">
+                                RULE No.{{ inspectedPlayer.currentRule.id }}
+                            </span>
+                        </div>
+
+                        <!-- Main Rule Title and Auto-fit Text -->
+                        <div class="flex-1 flex flex-col justify-center items-center text-center my-2 py-3 bg-white rounded-2xl p-4 border border-slate-100 shadow-inner">
+                            <h3 :class="getRuleTitleClass(inspectedPlayer.currentRule.title)" class="text-red-700 mb-2.5 font-serif font-black leading-tight border-b border-red-100 pb-2 w-full">
+                                {{ inspectedPlayer.currentRule.title }}
+                            </h3>
+                            <p :class="getRuleTextClass(inspectedPlayer.currentRule.text)" class="text-slate-800 font-medium px-1 leading-relaxed break-words max-h-[220px] overflow-y-auto w-full text-center">
+                                {{ inspectedPlayer.currentRule.text }}
+                            </p>
+                        </div>
+
+                        <!-- Redraw / Refresh Skill Section -->
+                        <div v-if="hasRedrawSkill(inspectedPlayer.currentRule)" class="mt-2 bg-purple-50 rounded-2xl p-3 border border-purple-200 flex flex-col gap-2 shrink-0">
+                            <div class="text-xs font-bold text-purple-900 flex items-center gap-1.5">
+                                <span>✨ 此规则具备【重刷/过卡牌】技能</span>
+                            </div>
+                            <button @click="triggerRedrawRule(inspectedPlayer.id)" class="w-full py-2.5 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white font-bold text-xs sm:text-sm rounded-xl shadow transition-transform active:scale-95 flex items-center justify-center gap-2">
+                                <svg class="w-4 h-4 animate-spin-slow" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
+                                触发重刷技能 (重新抽取新规则)
+                            </button>
+                        </div>
+
+                        <!-- General Redraw / Force Redraw (Host option) -->
+                        <div v-else-if="playerInfo?.isHost" class="mt-2 text-center shrink-0">
+                            <button @click="triggerRedrawRule(inspectedPlayer.id)" class="text-xs text-slate-500 hover:text-purple-600 underline font-medium">
+                                [房主特权: 强制重刷此玩家规则]
+                            </button>
+                        </div>
+                    </template>
+
+                    <template v-else>
+                        <div class="py-12 flex flex-col items-center justify-center text-center text-slate-400">
+                            <div class="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center text-3xl font-bold mb-3">🏓</div>
+                            <div class="text-base font-bold text-slate-600 mb-1">暂无卡牌规则</div>
+                            <div class="text-xs text-slate-400">牌局开始后将随机分发规则</div>
+                        </div>
+                    </template>
+                </div>
+
+                <!-- Footer -->
+                <div class="p-3.5 bg-slate-50 border-t border-slate-200 flex justify-end shrink-0">
+                    <button @click="inspectedPlayer = null" class="w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl shadow transition-all active:scale-95 text-center text-sm">
+                        关闭
+                    </button>
+                </div>
+            </div>
+        </div>
 
         <!-- Settle Modal (Only Host sees this) -->
         <div v-if="showSettleModal && playerInfo?.isHost" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
@@ -1708,6 +1834,7 @@
                 const playerInfo = ref(null);
                 const showSettleModal = ref(false);
                 const adjustments = reactive({});
+                const inspectedPlayer = ref(null);
                 
                 let availableRules = [...MAHJONG_RULES];
                 let toastId = 0;
@@ -1750,16 +1877,76 @@
                         saveHostState();
                         connections.forEach(conn => {
                             if (conn.open) {
-                                // Important: Strip other players' rules before sending to a client
+                                // Send room state with all player rules preserved so players can inspect each other's cards
                                 const stateForClient = JSON.parse(JSON.stringify(room.value));
-                                stateForClient.players.forEach(p => {
-                                    if (p.name !== conn.metadata?.name) {
-                                        p.currentRule = null;
-                                    }
-                                });
                                 conn.send({ type: 'STATE_UPDATE', room: stateForClient });
                             }
                         });
+                    }
+                };
+
+                const inspectPlayer = (p) => {
+                    inspectedPlayer.value = p;
+                };
+
+                const hasRedrawSkill = (rule) => {
+                    if (!rule) return false;
+                    const text = (rule.title || '') + ' ' + (rule.text || '');
+                    const keywords = ['弃牌重置', '重置', '重新摸', '重刷', '替换', '过卡牌', '暗抽', '换牌', '刷新', '补摸', '再抽', '命运卡', '扭蛋卡', '抽1张', '互换手牌', '重新', '弃置', '抽条'];
+                    return keywords.some(kw => text.includes(kw));
+                };
+
+                const getRuleTitleClass = (title) => {
+                    if (!title) return 'text-xl sm:text-2xl font-bold';
+                    const len = title.length;
+                    if (len > 18) return 'text-base sm:text-lg font-bold leading-tight';
+                    if (len > 12) return 'text-lg sm:text-xl font-bold leading-tight';
+                    if (len > 8) return 'text-xl sm:text-2xl font-bold leading-tight';
+                    return 'text-2xl sm:text-3xl font-bold leading-tight';
+                };
+
+                const getRuleTextClass = (text) => {
+                    if (!text) return 'text-base font-normal';
+                    const len = text.length;
+                    if (len > 150) return 'text-xs sm:text-xs leading-snug tracking-tight font-normal';
+                    if (len > 90) return 'text-xs sm:text-sm leading-snug font-medium';
+                    if (len > 50) return 'text-sm sm:text-base leading-relaxed font-medium';
+                    if (len > 25) return 'text-base sm:text-lg leading-relaxed font-medium';
+                    return 'text-lg sm:text-xl leading-relaxed font-semibold';
+                };
+
+                const redrawRuleForPlayer = (targetPlayer) => {
+                    if (!targetPlayer) return;
+                    if (availableRules.length === 0) {
+                        showToast('牌池见底，已重新洗入所有规则牌');
+                        availableRules = [...MAHJONG_RULES].sort(() => Math.random() - 0.5);
+                    }
+                    const oldTitle = targetPlayer.currentRule?.title || '';
+                    targetPlayer.currentRule = availableRules.pop();
+                    targetPlayer.revealed = true;
+                    showToast(`🔄 玩家 ${targetPlayer.name} 重刷卡牌《${oldTitle}》➔《${targetPlayer.currentRule.title}》`);
+                    if (inspectedPlayer.value && (inspectedPlayer.value.id === targetPlayer.id || inspectedPlayer.value.name === targetPlayer.targetPlayer)) {
+                        inspectedPlayer.value = targetPlayer;
+                    }
+                    if (playerInfo.value?.isHost) {
+                        broadcastState();
+                    }
+                };
+
+                const triggerRedrawRule = (playerId) => {
+                    if (!room.value) return;
+                    const target = room.value.players.find(p => p.id === playerId || p.name === playerId);
+                    if (!target) return;
+
+                    if (playerInfo.value?.isHost) {
+                        redrawRuleForPlayer(target);
+                    } else {
+                        if (connections[0] && connections[0].open) {
+                            connections[0].send({ type: 'REDRAW_RULE', playerId: target.id });
+                            showToast('已向房主请求重刷卡牌规则...');
+                        } else {
+                            showToast('连接已开，无法发送重刷请求');
+                        }
                     }
                 };
 
@@ -1891,6 +2078,12 @@
                                     p.revealed = true;
                                     broadcastState();
                                 }
+                            } else if (data.type === 'REDRAW_RULE') {
+                                const targetId = data.playerId || conn.peer;
+                                const p = room.value.players.find(p => p.id === targetId || p.name === conn.metadata?.name);
+                                if (p) {
+                                    redrawRuleForPlayer(p);
+                                }
                             }
                         });
                         
@@ -1936,6 +2129,11 @@
                                 const me = data.room.players.find(p => p.name === playerInfo.value.name);
                                 if (me) playerInfo.value = me;
                                 
+                                if (inspectedPlayer.value) {
+                                    const updatedInspected = data.room.players.find(p => p.name === inspectedPlayer.value.name || p.id === inspectedPlayer.value.id);
+                                    if (updatedInspected) inspectedPlayer.value = updatedInspected;
+                                }
+
                                 if (data.room.status === 'playing' && screen.value === 'waiting') {
                                     screen.value = 'game';
                                     showToast('牌局已开始，请翻阅你的特殊规则');
@@ -2076,6 +2274,7 @@
                 return {
                     screen, mode, playerName, joinRoomId, isLoading, loadingText,
                     room, playerInfo, showSettleModal, adjustments, notifications,
+                    inspectedPlayer, inspectPlayer, hasRedrawSkill, getRuleTitleClass, getRuleTextClass, triggerRedrawRule,
                     handleCreate, handleJoin, startGame, revealMyRule, exitRoom,
                     openSettleModal, changeScore, confirmSettle, totalAdjustment,
                     myPlayer, otherPlayers
