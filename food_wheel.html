@@ -2,968 +2,1602 @@
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>🎯 今天吃什么 · 终极食物转盘</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>今天吃什么 · 终极食物转盘</title>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
 
   body {
     min-height: 100vh;
+    min-height: 100dvh;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    background: linear-gradient(135deg, #0c0e2b 0%, #1a1a4e 30%, #2d1b69 60%, #1a1a4e 100%);
-    font-family: 'Microsoft YaHei', 'PingFang SC', sans-serif;
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+    font-family: 'WenQuanYi Micro Hei', 'PingFang SC', 'Microsoft YaHei', sans-serif;
     overflow: hidden;
-    position: relative;
+    user-select: none;
+    -webkit-user-select: none;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+    padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
   }
 
-  /* 星空背景 */
-  body::before {
-    content: '';
+  .bg-particles {
     position: fixed;
     top: 0; left: 0; right: 0; bottom: 0;
-    background: 
-      radial-gradient(1px 1px at 10% 20%, rgba(255,255,255,0.8), transparent),
-      radial-gradient(1px 1px at 30% 50%, rgba(255,255,255,0.6), transparent),
-      radial-gradient(1.5px 1.5px at 50% 10%, rgba(255,255,255,0.9), transparent),
-      radial-gradient(1px 1px at 70% 40%, rgba(255,255,255,0.5), transparent),
-      radial-gradient(1px 1px at 90% 80%, rgba(255,255,255,0.7), transparent),
-      radial-gradient(1.5px 1.5px at 20% 70%, rgba(255,255,255,0.6), transparent),
-      radial-gradient(1px 1px at 60% 90%, rgba(255,255,255,0.8), transparent),
-      radial-gradient(1px 1px at 80% 15%, rgba(255,255,255,0.5), transparent),
-      radial-gradient(1px 1px at 40% 85%, rgba(255,255,255,0.7), transparent),
-      radial-gradient(1.5px 1.5px at 15% 45%, rgba(255,255,255,0.4), transparent);
     pointer-events: none;
     z-index: 0;
+    overflow: hidden;
   }
-
-  .title {
-    font-size: 42px;
-    font-weight: 900;
-    background: linear-gradient(90deg, #ff6b6b, #ffd93d, #6bcb77, #4d96ff, #ff6b6b);
-    background-size: 300% 100%;
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    animation: titleShine 4s ease infinite;
-    margin-bottom: 8px;
-    z-index: 1;
-    text-shadow: none;
-    letter-spacing: 4px;
-  }
-
-  @keyframes titleShine {
-    0%, 100% { background-position: 0% 50%; }
-    50% { background-position: 100% 50%; }
-  }
-
-  .subtitle {
-    color: rgba(255,255,255,0.6);
-    font-size: 14px;
-    margin-bottom: 20px;
-    z-index: 1;
-    letter-spacing: 2px;
-  }
-
-  .wheel-container {
-    position: relative;
-    width: 520px;
-    height: 520px;
-    z-index: 1;
-  }
-
-  /* 外圈装饰灯 */
-  .outer-ring {
+  .particle {
     position: absolute;
-    top: -18px; left: -18px;
-    width: 556px; height: 556px;
     border-radius: 50%;
-    border: 3px solid rgba(255,255,255,0.15);
+    animation: float linear infinite;
+    opacity: 0.15;
+  }
+  @keyframes float {
+    0%   { transform: translateY(100vh) scale(0); opacity: 0; }
+    10%  { opacity: 0.15; }
+    100% { transform: translateY(-10vh) scale(1); opacity: 0; }
+  }
+
+  .container {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: clamp(4px, 1.5vw, 8px);
+    width: 100%;
+    max-width: 520px;
+    flex: 1;
+    justify-content: center;
+  }
+
+  h1 {
+    font-size: clamp(1.1rem, 5.5vw, 1.8rem);
+    color: #fff;
+    margin-bottom: 2px;
+    text-shadow: 0 0 20px rgba(255,165,0,0.5);
+    letter-spacing: 2px;
+    text-align: center;
+    line-height: 1.3;
+  }
+  .subtitle {
+    color: rgba(255,255,255,0.5);
+    font-size: clamp(0.6rem, 2vw, 0.8rem);
+    margin-bottom: 6px;
+    text-align: center;
+  }
+
+  /* ===== 转盘区域 ===== */
+  .wheel-wrapper {
+    position: relative;
+    width: clamp(220px, 80vw, 380px);
+    height: clamp(220px, 80vw, 380px);
+    margin-bottom: 6px;
+  }
+
+  .wheel-border {
+    position: absolute;
+    top: -6px; left: -6px;
+    width: calc(100% + 12px);
+    height: calc(100% + 12px);
+    border-radius: 50%;
+    background: conic-gradient(from 0deg, #ff6b00, #ffb800, #ff6b00, #ffb800, #ff6b00, #ffb800, #ff6b00, #ffb800, #ff6b00, #ffb800, #ff6b00, #ffb800);
+    animation: borderSpin 4s linear infinite;
+    box-shadow: 0 0 30px rgba(255,107,0,0.4), inset 0 0 15px rgba(255,184,0,0.3);
+  }
+  @keyframes borderSpin { to { transform: rotate(360deg); } }
+
+  .wheel-border::after {
+    content: '';
+    position: absolute;
+    top: 4px; left: 4px;
+    width: calc(100% - 8px);
+    height: calc(100% - 8px);
+    border-radius: 50%;
+    background: #1a1a2e;
   }
 
   .bulbs {
     position: absolute;
-    top: -18px; left: -18px;
-    width: 556px; height: 556px;
+    top: -6px; left: -6px;
+    width: calc(100% + 12px);
+    height: calc(100% + 12px);
     border-radius: 50%;
+    z-index: 2;
     pointer-events: none;
   }
-
   .bulb {
     position: absolute;
-    width: 10px; height: 10px;
+    width: clamp(4px, 1.6vw, 7px);
+    height: clamp(4px, 1.6vw, 7px);
     border-radius: 50%;
     top: 50%; left: 50%;
     transform-origin: 0 0;
-    animation: bulbBlink 1.5s ease-in-out infinite alternate;
+    animation: bulbBlink 1s ease-in-out infinite alternate;
   }
-
-  .bulb:nth-child(odd) { animation-delay: 0.3s; }
-  .bulb:nth-child(3n) { animation-delay: 0.6s; }
-  .bulb:nth-child(5n) { animation-delay: 0.9s; }
-
+  .bulb::after {
+    content: '';
+    position: absolute;
+    width: 100%; height: 100%;
+    border-radius: 50%;
+    background: inherit;
+    box-shadow: 0 0 4px currentColor;
+  }
+  .bulb:nth-child(odd) { animation-delay: 0s; }
+  .bulb:nth-child(even) { animation-delay: 0.5s; }
   @keyframes bulbBlink {
-    0% { opacity: 0.3; box-shadow: 0 0 2px currentColor; }
-    100% { opacity: 1; box-shadow: 0 0 8px currentColor, 0 0 16px currentColor; }
+    0%   { opacity: 0.3; transform: translate(-50%,-50%) rotate(var(--a)) translate(clamp(120px, 40vw, 196px)) scale(0.8); }
+    100% { opacity: 1;   transform: translate(-50%,-50%) rotate(var(--a)) translate(clamp(120px, 40vw, 196px)) scale(1.2); }
   }
 
-  canvas { border-radius: 50%; }
+  canvas#wheel {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    z-index: 3;
+    filter: drop-shadow(0 4px 15px rgba(0,0,0,0.5));
+  }
 
-  /* 中心按钮 */
+  /* 指针 - 顶部居中 */
+  .pointer {
+    position: absolute;
+    top: -16px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 10;
+    filter: drop-shadow(0 3px 6px rgba(0,0,0,0.7));
+    pointer-events: none;
+  }
+  .pointer svg { width: clamp(24px, 8vw, 40px); height: clamp(32px, 10vw, 52px); }
+
   .center-btn {
     position: absolute;
     top: 50%; left: 50%;
     transform: translate(-50%, -50%);
-    width: 100px; height: 100px;
+    z-index: 10;
+    width: clamp(48px, 15vw, 72px);
+    height: clamp(48px, 15vw, 72px);
     border-radius: 50%;
-    background: radial-gradient(circle at 35% 35%, #ff6b6b, #ee3333, #cc0000);
-    border: 4px solid #fff;
+    border: 3px solid #fff;
+    background: radial-gradient(circle at 35% 35%, #ff4757, #c0392b);
     color: #fff;
-    font-size: 16px;
+    font-size: clamp(0.6rem, 2vw, 0.85rem);
     font-weight: 900;
     cursor: pointer;
-    z-index: 10;
-    box-shadow: 0 4px 20px rgba(238,51,51,0.6), inset 0 -3px 8px rgba(0,0,0,0.3);
+    letter-spacing: 1px;
+    box-shadow: 0 3px 12px rgba(255,71,87,0.5), inset 0 -2px 6px rgba(0,0,0,0.3);
     transition: transform 0.15s, box-shadow 0.15s;
-    letter-spacing: 2px;
     display: flex;
     align-items: center;
     justify-content: center;
+    text-align: center;
+    line-height: 1.2;
+    min-width: 44px;
+    min-height: 44px;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
   }
-  .center-btn:hover { transform: translate(-50%, -50%) scale(1.08); box-shadow: 0 6px 30px rgba(238,51,51,0.8), inset 0 -3px 8px rgba(0,0,0,0.3); }
-  .center-btn:active { transform: translate(-50%, -50%) scale(0.95); }
-  .center-btn.disabled { cursor: not-allowed; opacity: 0.6; }
-
-  /* 指针 */
-  .pointer {
-    position: absolute;
-    top: -6px; left: 50%;
-    transform: translateX(-50%);
-    width: 0; height: 0;
-    border-left: 18px solid transparent;
-    border-right: 18px solid transparent;
-    border-top: 36px solid #ffd93d;
-    filter: drop-shadow(0 4px 6px rgba(0,0,0,0.5));
-    z-index: 11;
-    transition: filter 0.3s;
+  .center-btn:active {
+    transform: translate(-50%, -50%) scale(0.92);
+    box-shadow: 0 2px 8px rgba(255,71,87,0.4);
+  }
+  .center-btn.disabled {
+    background: radial-gradient(circle at 35% 35%, #888, #555);
+    cursor: not-allowed;
+    box-shadow: none;
   }
 
-  /* 底部统计 */
-  .stats-bar {
-    margin-top: 18px;
-    z-index: 1;
-    display: flex;
-    gap: 24px;
-    align-items: center;
-  }
-  .stats-bar span {
-    color: rgba(255,255,255,0.7);
-    font-size: 13px;
-  }
-  .stats-bar .highlight { color: #ffd93d; font-weight: 700; }
-
-  /* 重置按钮 */
-  .reset-btn {
-    margin-top: 12px;
-    z-index: 1;
-    padding: 8px 24px;
-    border-radius: 20px;
-    border: 1px solid rgba(255,255,255,0.3);
-    background: rgba(255,255,255,0.08);
-    color: rgba(255,255,255,0.7);
-    font-size: 13px;
-    cursor: pointer;
-    transition: all 0.3s;
-    letter-spacing: 1px;
-  }
-  .reset-btn:hover { background: rgba(255,255,255,0.18); color: #fff; }
-
-  /* 已排除标签 */
-  .excluded-bar {
-    margin-top: 10px;
-    z-index: 1;
+  /* ===== 排除标签区 ===== */
+  .excluded-area {
     display: flex;
     flex-wrap: wrap;
-    gap: 6px;
+    gap: 3px;
     justify-content: center;
-    max-width: 560px;
-    min-height: 24px;
+    margin-bottom: 4px;
+    min-height: 18px;
+    max-width: 95vw;
+    padding: 0 4px;
   }
   .excluded-tag {
-    background: rgba(255,80,80,0.2);
-    border: 1px solid rgba(255,80,80,0.4);
-    color: #ff9999;
-    font-size: 11px;
-    padding: 2px 10px;
+    background: rgba(255,71,87,0.2);
+    border: 1px solid rgba(255,71,87,0.5);
+    color: #ff6b81;
+    font-size: clamp(0.55rem, 1.8vw, 0.68rem);
+    padding: 2px 6px;
     border-radius: 10px;
-    animation: fadeInScale 0.3s ease;
+    animation: tagIn 0.3s ease;
+    white-space: nowrap;
   }
-  @keyframes fadeInScale {
+  @keyframes tagIn {
     from { opacity: 0; transform: scale(0.5); }
-    to { opacity: 1; transform: scale(1); }
+    to   { opacity: 1; transform: scale(1); }
   }
+
+  /* ===== 底部按钮 ===== */
+  .bottom-bar {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    justify-content: center;
+    width: 100%;
+    padding: 0 8px;
+  }
+  .btn-reset, .btn-all {
+    padding: 7px 14px;
+    border-radius: 20px;
+    font-size: clamp(0.7rem, 2.3vw, 0.82rem);
+    cursor: pointer;
+    transition: all 0.2s;
+    min-height: 36px;
+    -webkit-tap-highlight-color: transparent;
+    flex: 1;
+    min-width: 90px;
+    max-width: 150px;
+    touch-action: manipulation;
+    border: none;
+    font-weight: 600;
+  }
+  .btn-reset {
+    background: rgba(255,255,255,0.1);
+    border: 1px solid rgba(255,255,255,0.3) !important;
+    color: rgba(255,255,255,0.8);
+  }
+  .btn-reset:active { background: rgba(255,255,255,0.25); transform: scale(0.95); }
+
+  .btn-all {
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    color: #fff;
+    box-shadow: 0 2px 10px rgba(102,126,234,0.4);
+  }
+  .btn-all:active { transform: scale(0.95); box-shadow: 0 1px 5px rgba(102,126,234,0.3); }
 
   /* ===== 弹窗 ===== */
   .modal-overlay {
     display: none;
     position: fixed;
     top: 0; left: 0; right: 0; bottom: 0;
-    background: rgba(0,0,0,0.7);
+    background: rgba(0,0,0,0.75);
     z-index: 100;
     align-items: center;
     justify-content: center;
-    backdrop-filter: blur(4px);
+    padding: clamp(4px, 2vw, 12px);
     animation: fadeIn 0.3s ease;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
   }
   .modal-overlay.show { display: flex; }
-
   @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
   .modal {
-    background: linear-gradient(145deg, #1e1e50, #2a2a6e);
-    border: 2px solid rgba(255,255,255,0.15);
-    border-radius: 24px;
-    padding: 36px 40px 28px;
-    max-width: 560px;
-    width: 90%;
-    max-height: 82vh;
+    background: linear-gradient(145deg, #1e1e3a, #2a2a5a);
+    border-radius: 16px;
+    padding: clamp(12px, 3.5vw, 18px) clamp(10px, 3vw, 14px) clamp(10px, 3vw, 14px);
+    width: 100%;
+    max-width: 440px;
+    max-height: 92vh;
     overflow-y: auto;
-    text-align: center;
+    border: 1px solid rgba(255,255,255,0.1);
+    box-shadow: 0 20px 60px rgba(0,0,0,0.6);
+    animation: popIn 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
     position: relative;
-    animation: popIn 0.4s cubic-bezier(0.18, 0.89, 0.32, 1.28);
-    box-shadow: 0 20px 80px rgba(0,0,0,0.6);
+    -webkit-overflow-scrolling: touch;
   }
-
   @keyframes popIn {
-    from { transform: scale(0.5); opacity: 0; }
-    to { transform: scale(1); opacity: 1; }
+    from { opacity: 0; transform: scale(0.7) translateY(30px); }
+    to   { opacity: 1; transform: scale(1) translateY(0); }
   }
 
-  .modal .emoji-big { font-size: 56px; margin-bottom: 8px; }
-
-  .modal h2 {
-    font-size: 22px;
-    color: #fff;
-    margin-bottom: 4px;
+  .modal-close {
+    position: absolute;
+    top: 6px; right: 10px;
+    background: none; border: none;
+    color: rgba(255,255,255,0.5);
+    font-size: 1.6rem;
+    cursor: pointer;
+    z-index: 10;
+    line-height: 1;
+    width: 36px; height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    -webkit-tap-highlight-color: transparent;
   }
 
-  .modal .category-name {
-    font-size: 32px;
+  .modal-title {
+    font-size: clamp(1rem, 4.2vw, 1.25rem);
+    color: #ffb800;
+    text-align: center;
+    margin-bottom: 2px;
     font-weight: 900;
-    background: linear-gradient(90deg, #ff6b6b, #ffd93d, #6bcb77);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    margin: 6px 0 4px;
+    padding-right: 24px;
+  }
+  .modal-subtitle {
+    text-align: center;
+    color: rgba(255,255,255,0.5);
+    font-size: clamp(0.65rem, 2vw, 0.78rem);
+    margin-bottom: 8px;
   }
 
-  .modal .desc {
-    color: rgba(255,255,255,0.55);
-    font-size: 13px;
-    margin-bottom: 16px;
+  .food-table-wrap {
+    max-height: 42vh;
+    overflow-y: auto;
+    border-radius: 10px;
+    border: 1px solid rgba(255,255,255,0.1);
+    margin-bottom: 10px;
+    -webkit-overflow-scrolling: touch;
   }
-
-  /* 食物表格 */
   .food-table {
     width: 100%;
     border-collapse: collapse;
-    margin: 10px 0 18px;
-    font-size: 13px;
+    font-size: clamp(0.65rem, 2.2vw, 0.76rem);
   }
   .food-table thead th {
-    background: rgba(255,255,255,0.1);
-    color: #ffd93d;
-    padding: 8px 10px;
-    font-size: 12px;
-    letter-spacing: 1px;
-    border-bottom: 2px solid rgba(255,255,255,0.15);
+    background: rgba(255,184,0,0.15);
+    color: #ffb800;
+    padding: 5px 6px;
+    text-align: left;
+    font-weight: 700;
+    border-bottom: 1px solid rgba(255,184,0,0.2);
+    position: sticky;
+    top: 0;
+    white-space: nowrap;
+    z-index: 1;
   }
   .food-table tbody td {
-    padding: 7px 10px;
+    padding: 3.5px 6px;
     color: rgba(255,255,255,0.85);
-    border-bottom: 1px solid rgba(255,255,255,0.06);
-    text-align: left;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
   }
-  .food-table tbody tr:nth-child(odd) td { background: rgba(255,255,255,0.03); }
-  .food-table tbody tr:hover td { background: rgba(255,255,255,0.08); }
-  .food-table .num { color: rgba(255,255,255,0.35); font-size: 11px; text-align: center; width: 36px; }
-  .food-table .tag {
-    display: inline-block;
-    font-size: 10px;
-    padding: 1px 7px;
-    border-radius: 8px;
-    background: rgba(108,203,119,0.2);
-    color: #6bcb77;
-    margin-left: 6px;
+  .food-table tbody tr:nth-child(even) td {
+    background: rgba(255,255,255,0.03);
   }
+  .food-table tbody tr:active {
+    background: rgba(255,184,0,0.1);
+  }
+  .food-table .col-no { width: 22px; text-align: center; color: rgba(255,255,255,0.35); font-size: 0.65rem; }
+  .food-table .col-name { font-weight: 600; color: rgba(255,255,255,0.9); }
+  .food-table .col-desc { color: rgba(255,255,255,0.35); font-size: 0.6rem; }
 
-  .modal-actions {
+  .modal-btns {
     display: flex;
-    gap: 12px;
-    justify-content: center;
+    gap: 5px;
     flex-wrap: wrap;
-    margin-top: 6px;
+    justify-content: center;
+    position: sticky;
+    bottom: 0;
+    background: linear-gradient(180deg, transparent, #2a2a5a 40%);
+    padding-top: 6px;
   }
-
-  .btn-eat {
-    padding: 12px 32px;
-    border-radius: 30px;
-    border: none;
-    background: linear-gradient(135deg, #ff6b6b, #ee3333);
-    color: #fff;
-    font-size: 15px;
+  .modal-btns button {
+    flex: 1;
+    min-width: 70px;
+    padding: 9px 6px;
+    border-radius: 10px;
+    font-size: clamp(0.68rem, 2.2vw, 0.82rem);
     font-weight: 700;
     cursor: pointer;
-    letter-spacing: 2px;
-    box-shadow: 0 4px 16px rgba(238,51,51,0.4);
-    transition: transform 0.2s;
-  }
-  .btn-eat:hover { transform: scale(1.05); }
-
-  .btn-skip {
-    padding: 12px 28px;
-    border-radius: 30px;
-    border: 1px solid rgba(255,255,255,0.3);
-    background: rgba(255,255,255,0.08);
-    color: rgba(255,255,255,0.8);
-    font-size: 14px;
-    cursor: pointer;
-    letter-spacing: 1px;
+    border: none;
     transition: all 0.2s;
+    -webkit-tap-highlight-color: transparent;
+    min-height: 40px;
+    touch-action: manipulation;
   }
-  .btn-skip:hover { background: rgba(255,255,255,0.18); color: #fff; }
+  .modal-btns button:active { transform: scale(0.95); }
 
-  .btn-spin-again {
-    padding: 12px 28px;
-    border-radius: 30px;
-    border: 1px solid rgba(255,217,61,0.4);
-    background: rgba(255,217,61,0.1);
-    color: #ffd93d;
-    font-size: 14px;
-    cursor: pointer;
-    letter-spacing: 1px;
-    transition: all 0.2s;
+  .btn-confirm {
+    background: linear-gradient(135deg, #00b894, #00d2a0);
+    color: #fff;
+    box-shadow: 0 3px 12px rgba(0,184,148,0.4);
   }
-  .btn-spin-again:hover { background: rgba(255,217,61,0.25); }
+  .btn-reject {
+    background: linear-gradient(135deg, #ff6b6b, #ee5a24);
+    color: #fff;
+    box-shadow: 0 3px 12px rgba(255,107,107,0.4);
+  }
+  .btn-reroll {
+    background: linear-gradient(135deg, #a29bfe, #6c5ce7);
+    color: #fff;
+    box-shadow: 0 3px 12px rgba(108,92,231,0.4);
+  }
 
-  /* 撒花 canvas */
-  #confetti { position: fixed; top: 0; left: 0; pointer-events: none; z-index: 200; }
+  .hint {
+    color: rgba(255,255,255,0.3);
+    font-size: clamp(0.55rem, 1.8vw, 0.65rem);
+    margin-top: 4px;
+    text-align: center;
+    padding: 0 8px;
+  }
 
-  /* 滚动条 */
-  .modal::-webkit-scrollbar { width: 6px; }
-  .modal::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 3px; }
+  .empty-state {
+    text-align: center;
+    color: rgba(255,255,255,0.6);
+    padding: 16px 8px;
+  }
+  .empty-state .big-emoji { font-size: 2.2rem; margin-bottom: 6px; }
+
+  .confetti {
+    position: fixed;
+    top: -10px;
+    z-index: 200;
+    pointer-events: none;
+    animation: confettiFall linear forwards;
+  }
+  @keyframes confettiFall {
+    0%   { transform: translateY(0) rotate(0deg); opacity: 1; }
+    100% { transform: translateY(105vh) rotate(720deg); opacity: 0; }
+  }
+
+  /* ========== 移动端适配 ========== */
+  @media (max-width: 480px) {
+    body { justify-content: flex-start; padding-top: max(8px, env(safe-area-inset-top)); }
+    .container { padding: 3px; }
+    h1 { font-size: 1.2rem; margin-bottom: 1px; }
+    .subtitle { font-size: 0.58rem; margin-bottom: 4px; }
+    .wheel-wrapper { margin-bottom: 4px; }
+    .excluded-area { gap: 2px; margin-bottom: 3px; }
+    .bottom-bar { gap: 5px; padding: 0 5px; }
+    .modal { border-radius: 14px; }
+    .food-table .col-desc,
+    .food-table thead th:nth-child(3),
+    .food-table tbody td:nth-child(3) { display: none; }
+    .modal-btns { gap: 3px; }
+    .modal-btns button { min-width: 60px; padding: 7px 4px; font-size: 0.65rem; }
+    .food-table-wrap { max-height: 45vh; }
+  }
+
+  @media (max-width: 360px) {
+    h1 { font-size: 1rem; }
+    .wheel-wrapper { width: 90vw; height: 90vw; }
+    .modal-title { font-size: 0.95rem; }
+    .food-table { font-size: 0.6rem; }
+  }
+
+  @media (max-height: 500px) and (orientation: landscape) {
+    body { justify-content: flex-start; padding-top: 4px; }
+    .container { flex-direction: row; flex-wrap: wrap; max-width: 100vw; gap: 8px; }
+    .wheel-wrapper { width: 42vh; height: 42vh; margin-bottom: 0; }
+    h1 { font-size: 0.9rem; width: 100%; margin-bottom: 0; }
+    .subtitle { font-size: 0.55rem; width: 100%; margin-bottom: 0; }
+    .excluded-area { max-width: 50vw; }
+    .bottom-bar { flex-direction: column; }
+    .modal { max-height: 95vh; }
+    .food-table-wrap { max-height: 30vh; }
+  }
+
+  @media (min-width: 768px) {
+    .wheel-wrapper { width: 400px; height: 400px; }
+    .modal { max-width: 460px; }
+    .food-table { font-size: 0.8rem; }
+  }
 </style>
 </head>
 <body>
 
-<div class="title">🎯 今天吃什么？</div>
-<div class="subtitle">终极食物分类转盘 · 专治选择困难症</div>
+<div class="bg-particles" id="particles"></div>
 
-<div class="wheel-container">
-  <div class="outer-ring"></div>
-  <div class="bulbs" id="bulbs"></div>
-  <div class="pointer"></div>
-  <canvas id="wheel" width="520" height="520"></canvas>
-  <button class="center-btn" id="spinBtn" onclick="spin()">开始<br>转盘</button>
+<div class="container">
+  <h1>🎯 今天吃什么</h1>
+  <p class="subtitle">点中间按钮旋转 · 按空格键也能转</p>
+
+  <div class="wheel-wrapper">
+    <div class="wheel-border"></div>
+    <div class="bulbs" id="bulbs"></div>
+    <canvas id="wheel"></canvas>
+    <div class="pointer">
+      <svg viewBox="0 0 60 80">
+        <defs>
+          <linearGradient id="pg" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#ffb800"/>
+            <stop offset="100%" stop-color="#ff6b00"/>
+          </linearGradient>
+        </defs>
+        <polygon points="30,0 0,50 22,50 22,80 38,80 38,50 60,50" fill="url(#pg)" stroke="#fff" stroke-width="2"/>
+      </svg>
+    </div>
+    <button class="center-btn" id="spinBtn" onclick="spin()">开始</button>
+  </div>
+
+  <div class="excluded-area" id="excludedArea"></div>
+
+  <div class="bottom-bar">
+    <button class="btn-all" onclick="showAllCategories()">📋 查看全部分类</button>
+    <button class="btn-reset" onclick="resetWheel()">🔄 重置转盘</button>
+  </div>
+
+  <p class="hint">转到的分类不想吃？点「🙅 不想吃」即可永久排除</p>
 </div>
 
-<div class="stats-bar">
-  <span>已转 <span class="highlight" id="spinCount">0</span> 次</span>
-  <span>剩余 <span class="highlight" id="remainCount">16</span> 个分类</span>
-  <span>已排除 <span class="highlight" id="excludedCount">0</span> 个</span>
-</div>
-
-<div class="excluded-bar" id="excludedBar"></div>
-
-<button class="reset-btn" onclick="resetWheel()">🔄 重置转盘</button>
-
-<!-- 结果弹窗 -->
+<!-- 弹窗 -->
 <div class="modal-overlay" id="modal">
   <div class="modal">
-    <div class="emoji-big" id="modalEmoji">🎉</div>
-    <h2>恭喜抽中！</h2>
-    <div class="category-name" id="modalCategory"></div>
-    <div class="desc" id="modalDesc"></div>
-    <table class="food-table" id="foodTable">
-      <thead><tr><th>序号</th><th>美食推荐</th><th>特色说明</th></tr></thead>
-      <tbody id="foodTableBody"></tbody>
-    </table>
-    <div class="modal-actions">
-      <button class="btn-eat" onclick="closeModal()">✅ 就吃这个！</button>
-      <button class="btn-skip" onclick="skipAndRespin()">🙅 不想吃，再转</button>
-      <button class="btn-spin-again" onclick="closeModalAndSpin()">🎯 直接再转一次</button>
+    <button class="modal-close" onclick="closeModal()">×</button>
+    <div class="modal-title" id="modalTitle"></div>
+    <div class="modal-subtitle" id="modalSubtitle"></div>
+    <div id="modalBody"></div>
+    <div class="modal-btns" id="modalBtns">
+      <button class="btn-confirm" onclick="confirmChoice()">✅ 就吃这个！</button>
+      <button class="btn-reject" onclick="rejectAndRespin()">🙅 不想吃，再转</button>
+      <button class="btn-reroll" onclick="rerollKeep()">🎯 直接再转</button>
     </div>
   </div>
 </div>
 
-<canvas id="confetti"></canvas>
-
 <script>
-// ========== 食物分类数据（16类，每类20+种食物） ==========
+// ========================================================================
+//  24 大分类 × 50+ 菜品 = 1200+ 种美食
+// ========================================================================
 const CATEGORIES = [
   {
-    name: "烧烤", emoji: "🔥", color: "#e74c3c",
-    desc: "炭火炙烤的焦香，夏夜灵魂伴侣",
+    name: '🔥 烧烤', color: '#e74c3c', textColor: '#fff',
     foods: [
-      ["烤羊肉串", "经典中的经典，孜然辣椒面缺一不可"],
-      ["烤牛肉串", "嫩滑多汁，黑椒风味更出彩"],
-      ["烤鸡翅", "蜜汁or香辣，永远的两难选择"],
-      ["烤五花肉", "油脂焦脆，生菜包着吃绝了"],
-      ["烤生蚝", "蒜蓉粉丝加持，鲜到掉眉毛"],
-      ["烤茄子", "烧烤摊必点素菜之王"],
-      ["烤玉米", "焦香带甜，童年回忆味"],
-      ["烤韭菜", "壮阳草，烧烤桌上的绿色担当"],
-      ["烤鱼", "整条炭烤，外焦里嫩"],
-      ["烤鸡心", "口感弹牙，重口味最爱"],
-      ["烤面筋", "素食也能烤出肉感"],
-      ["烤香肠", "脆皮肠爆汁，小朋友最爱"],
-      ["烤排骨", "一块接一块停不下来"],
-      ["烤馒头片", "焦黄酥脆，蘸炼乳更绝"],
-      ["烤金针菇", "素菜界的肉感担当"],
-      ["烤鱿鱼", "铁板or炭烤，鲜辣过瘾"],
-      ["烤鸡脆骨", "嘎嘣脆，下酒神器"],
-      ["烤豆皮", "卷着香菜葱丝，一口满足"],
-      ["烤猪脑", "麻辣嫩滑，勇者美食"],
-      ["烤菠萝", "水果烧烤，甜咸交织的惊喜"],
+      ['烤羊肉串', '炭火烤制，孜然辣椒面'],
+      ['烤牛肉串', '黑椒腌制，嫩滑多汁'],
+      ['烤鸡翅', '蜜汁or香辣，外焦里嫩'],
+      ['烤五花肉', '韩式烤肉经典，肥而不腻'],
+      ['烤生蚝', '蒜蓉粉丝，鲜美多汁'],
+      ['烤茄子', '蒜蓉酱料，软糯入味'],
+      ['烤韭菜', '炭火微焦，香气扑鼻'],
+      ['烤金针菇', '锡纸包裹，鲜香滑嫩'],
+      ['烤玉米', '刷酱烤至焦黄，甜糯可口'],
+      ['烤鱼豆腐', '外脆内软，烧烤必点'],
+      ['烤鸡脆骨', '嚼劲十足，越嚼越香'],
+      ['烤鸡心', '铁板烧风味，鲜嫩弹牙'],
+      ['烤秋刀鱼', '盐烤经典，鱼油焦香'],
+      ['烤鱿鱼', '铁板爆炒，酱香浓郁'],
+      ['烤面筋', '手工面筋，麻辣鲜香'],
+      ['烤土豆片', '薄片烤脆，撒椒盐'],
+      ['烤红薯', '炭火慢烤，甜软流蜜'],
+      ['烤香蕉', '焦糖化外皮，热带风味'],
+      ['烤排骨', '酱烤肋排，肉香四溢'],
+      ['烤鹅肠', '脆爽弹牙，火锅烧烤双吃'],
+      ['烤牛板筋', '韧劲十足，越嚼越有味'],
+      ['烤蘑菇', '口蘑烤出汁水，鲜掉眉毛'],
+      ['烤豆腐干', '炭火熏香，豆味浓郁'],
+      ['烤大虾', '蒜蓉黄油，海鲜烧烤王'],
+      ['烤扇贝', '蒜蓉粉丝，海鲜烧烤经典'],
+      ['烤蚕蛹', '高蛋白，东北烧烤特色'],
+      ['烤猪脑', '麻辣嫩滑，冒菜烧烤风'],
+      ['烤鱼', '整条烤制，麻辣鲜香'],
+      ['烤馕', '新疆风味，焦脆香甜'],
+      ['烤猪蹄', '胶原蛋白满满，软糯弹牙']
     ]
   },
   {
-    name: "炒菜", emoji: "🍳", color: "#e67e22",
-    desc: "大火猛攻，镬气满满的家常味道",
+    name: '🍳 炒菜', color: '#e67e22', textColor: '#fff',
     foods: [
-      ["宫保鸡丁", "酸甜麻辣，下饭神器第一名"],
-      ["回锅肉", "川菜之王，肥而不腻"],
-      ["西红柿炒蛋", "国民家常菜，酸甜开胃"],
-      ["青椒肉丝", "简单快手，百吃不厌"],
-      ["干煸牛肉丝", "麻辣鲜香，嚼劲十足"],
-      ["鱼香肉丝", "没有鱼却有鱼香，川菜魔法"],
-      ["麻婆豆腐", "麻辣烫嫩，拌饭三碗不够"],
-      ["酸辣土豆丝", "成本最低，好评最高的菜"],
-      ["蒜蓉空心菜", "清脆爽口，蒜香扑鼻"],
-      ["小炒黄牛肉", "湘菜代表，辣椒炒肉升级版"],
-      ["可乐鸡翅", "甜口入味，零失败硬菜"],
-      ["红烧排骨", "浓油赤酱，肉香四溢"],
-      ["糖醋里脊", "外酥里嫩，酸甜口大人小孩通杀"],
-      ["尖椒炒鸡蛋", "朴素却上头，米饭杀手"],
-      ["地三鲜", "土豆茄子青椒的东北铁三角"],
-      ["虾仁滑蛋", "粤式家常，鲜嫩滑口"],
-      ["水煮肉片", "麻辣鲜香，肉嫩汤浓"],
-      ["干锅花菜", "焦香微辣，比肉还抢手"],
-      ["西蓝花炒培根", "荤素搭配，营养满分"],
-      ["辣子鸡", "在辣椒里找鸡丁的快乐"],
+      ['宫保鸡丁', '酸甜微辣，花生酥脆'],
+      ['鱼香肉丝', '鱼香汁调，咸甜酸辣'],
+      ['西红柿炒蛋', '国民家常菜，酸甜开胃'],
+      ['青椒肉丝', '清爽下饭，镬气十足'],
+      ['干煸四季豆', '煸炒至虎皮，麻辣干香'],
+      ['麻婆豆腐', '麻辣烫鲜香，川菜经典'],
+      ['回锅肉', '肥而不腻，蒜苗豆瓣香'],
+      ['酸辣土豆丝', '脆爽酸辣，家常必备'],
+      ['清炒西兰花', '蒜蓉清炒，健康清淡'],
+      ['地三鲜', '土豆茄子青椒，东北经典'],
+      ['干煸牛肉丝', '丝丝入味，嚼劲十足'],
+      ['蒜蓉空心菜', '蒜香清脆，夏日必备'],
+      ['辣子鸡', '辣椒堆里找鸡丁，麻辣过瘾'],
+      ['水煮肉片', '麻辣鲜香，肉嫩汤红'],
+      ['糖醋里脊', '酸甜酥脆，老少皆宜'],
+      ['红烧茄子', '浓油赤酱，软糯入味'],
+      ['爆炒腰花', '火候讲究，脆嫩无腥'],
+      ['酸菜鱼', '酸辣开胃，鱼肉嫩滑'],
+      ['姜葱炒蟹', '蟹肉鲜甜，姜葱提香'],
+      ['XO酱炒芦笋', '高档炒菜，鲜甜爽脆'],
+      ['韭菜炒蛋', '春天第一鲜，简单美味'],
+      ['苦瓜炒牛肉', '清热降火，苦中带甘'],
+      ['豆豉鲮鱼油麦菜', '广式经典，咸鲜下饭'],
+      ['鱼香茄子煲', '煲仔慢炖，酱香浓郁'],
+      ['京酱肉丝', '甜面酱裹肉丝，北京风味'],
+      ['醋溜白菜', '酸爽脆嫩，冬日暖胃'],
+      ['蒜苔炒肉', '春季时令，蒜香浓郁'],
+      ['黑椒牛柳', '西式调味，嫩滑多汁'],
+      ['菠萝咕噜肉', '酸甜酥脆，粤菜经典'],
+      ['铁锅炖大鹅', '东北硬菜，肉质紧实']
     ]
   },
   {
-    name: "炖煮", emoji: "🫕", color: "#8e44ad",
-    desc: "慢火细熬，汤汁浓郁暖胃暖心",
+    name: '🫕 炖煮', color: '#8e44ad', textColor: '#fff',
     foods: [
-      ["红烧肉", "肥瘦相间，入口即化"],
-      ["清炖鸡汤", "原汁原味，滋补首选"],
-      ["水煮牛肉", "麻辣鲜烫，肉片滑嫩"],
-      ["猪肉炖粉条", "东北硬菜，热气腾腾"],
-      ["老火靓汤", "广东人的养生信仰"],
-      ["番茄牛腩", "酸甜浓郁，牛肉软烂"],
-      ["排骨莲藕汤", "粉糯莲藕配鲜香排骨"],
-      ["酸菜鱼", "酸辣开胃，鱼片滑嫩"],
-      ["白切鸡", "皮爽肉嫩，蘸料是灵魂"],
-      ["萝卜炖牛杂", "软烂入味，街边经典"],
-      ["菌菇炖鸡汤", "山珍精华，鲜到掉眉毛"],
-      ["佛跳墙", "闽菜极品，鲍参翅肚一锅端"],
-      ["砂锅豆腐", "滚烫砂锅，豆腐吸满汤汁"],
-      ["羊肉煲", "冬日暖身，膻味去得干干净净"],
-      ["土豆炖牛肉", "家常经典，土豆比肉香"],
-      ["猪蹄黄豆汤", "胶原蛋白满满，美容圣品"],
-      ["红烧鲤鱼", "酱香浓郁，年夜饭必备"],
-      ["毛血旺", "麻辣鲜香，料多到吃不完"],
-      ["酸汤肥牛", "酸辣开胃，金汤诱人"],
-      ["椰子鸡", "清甜滋补，海南风味"],
+      ['红烧肉', '浓油赤酱，入口即化'],
+      ['清炖鸡汤', '原汁原味，滋补暖胃'],
+      ['水煮牛肉', '麻辣滚烫，牛肉滑嫩'],
+      ['猪肉炖粉条', '东北经典，粉条吸满肉汁'],
+      ['老火靓汤', '广东煲汤，慢火数小时'],
+      ['番茄炖牛腩', '酸甜软烂，营养满分'],
+      ['排骨莲藕汤', '粉糯莲藕，排骨鲜甜'],
+      ['酸菜白肉锅', '东北酸菜，五花肉片'],
+      ['砂锅豆腐', '文火慢炖，豆香浓郁'],
+      ['佛跳墙', '闽菜之王，山珍海味'],
+      ['羊肉煲', '冬日暖身，孜然生姜'],
+      ['萝卜炖牛尾', '滋补养颜，汤浓味美'],
+      ['黄豆炖猪蹄', '胶原蛋白，软糯弹牙'],
+      ['当归生姜羊肉汤', '药膳经典，温补驱寒'],
+      ['椰子鸡', '海南风味，清甜鲜美'],
+      ['啤酒鸭', '啤酒炖煮，鸭肉醇香'],
+      ['小鸡炖蘑菇', '东北名菜，榛蘑提鲜'],
+      ['豆腐煲', '砂锅慢炖，鲜香入味'],
+      ['莲藕排骨汤', '粉糯清甜，滋补家常'],
+      ['酸萝卜老鸭汤', '酸爽开胃，鸭肉紧实'],
+      ['红焖羊肉', '西北风味，肉烂味浓'],
+      ['瓦罐汤', '江西特色，慢火煨制'],
+      ['四物炖鸡', '台湾药膳，滋补养身'],
+      ['笋干老鸭煲', '杭州名菜，笋香鸭鲜'],
+      ['双皮奶炖蛋', '广式甜炖，嫩滑香甜'],
+      ['花胶炖鸡汤', '高级滋补，胶质满满'],
+      ['白果炖老鸭', '清热润肺，汤清味鲜'],
+      ['砂锅鱼头', '胖头鱼炖煮，汤白味浓'],
+      ['山药炖排骨', '健脾养胃，清淡滋补'],
+      ['卤肉饭', '台湾经典，卤汁拌饭']
     ]
   },
   {
-    name: "蒸菜", emoji: "🔵", color: "#3498db",
-    desc: "原汁原味，健康低脂的烹饪智慧",
+    name: '🔵 蒸菜', color: '#3498db', textColor: '#fff',
     foods: [
-      ["清蒸鲈鱼", "粤菜经典，鲜嫩无腥"],
-      ["粉蒸肉", "米粉裹肉，软糯咸香"],
-      ["蒸蛋羹", "滑嫩如丝，老少皆宜"],
-      ["糯米鸡", "荷叶包裹，糯米软糯鸡肉鲜"],
-      ["蒜蓉蒸虾", "鲜虾配蒜蓉，蒸出原味鲜"],
-      ["梅菜扣肉", "蒸出来的浓香，肥而不腻"],
-      ["清蒸扇贝", "蒜蓉粉丝，海鲜的极致简约"],
-      ["剁椒鱼头", "湘菜代表，辣而不燥"],
-      ["蒸排骨", "豆豉蒜香，肉嫩骨酥"],
-      ["葱油鸡", "嫩滑鸡肉淋上热葱油"],
-      ["蒸凤爪", "虎皮入味，软烂脱骨"],
-      ["珍珠丸子", "糯米包裹肉丸，晶莹剔透"],
-      ["虾饺", "广式早茶四大天王之首"],
-      ["豉汁蒸鱼腩", "豆豉提鲜，鱼肉细嫩"],
-      ["南瓜蒸排骨", "清甜南瓜吸肉香"],
-      ["蒜蓉蒸丝瓜", "清淡鲜美，夏日必备"],
-      ["蒸酿豆腐", "豆腐夹肉，客家经典"],
-      ["鲍汁蒸凤爪", "软糯弹牙，早茶必点"],
-      ["清蒸石斑鱼", "高档宴席常客，鲜甜细腻"],
-      ["糯米蒸排骨", "糯米吸满肉汁，一口沦陷"],
+      ['清蒸鲈鱼', '粤菜经典，鱼肉鲜嫩'],
+      ['粉蒸肉', '米粉裹肉，软糯咸香'],
+      ['蒸蛋羹', '嫩滑如丝，老少皆宜'],
+      ['糯米鸡', '荷叶包裹，糯米软糯'],
+      ['蒜蓉蒸虾', '鲜虾蒜香，简单美味'],
+      ['梅菜扣肉', '蒸到软烂，肥而不腻'],
+      ['剁椒鱼头', '湘菜代表，鲜辣过瘾'],
+      ['豉汁蒸排骨', '广式早茶，嫩滑入味'],
+      ['清蒸石斑鱼', '高端海鲜，原汁原味'],
+      ['蒸肉饼', '广式家常，咸鲜下饭'],
+      ['南瓜蒸排骨', '南瓜甜味，排骨鲜香'],
+      ['蒜蓉蒸扇贝', '海鲜蒸制，蒜香扑鼻'],
+      ['荷叶粉蒸鸡', '荷叶清香，鸡肉嫩滑'],
+      ['清蒸多宝鱼', '鱼肉细嫩，蒸制最佳'],
+      ['蒸水蛋配虾仁', '双鲜合璧，嫩滑鲜美'],
+      ['豆豉蒸鱼腩', '广式蒸鱼，豆豉提鲜'],
+      ['糯米蒸排骨', '糯米吸汁，排骨软烂'],
+      ['蒸酿豆腐', '客家菜，豆腐酿肉'],
+      ['清蒸大闸蟹', '秋风起蟹脚痒，清蒸最鲜'],
+      ['蒜蓉蒸丝瓜', '夏日时令，清淡鲜甜'],
+      ['虫草花蒸鸡', '药膳蒸菜，滋补养生'],
+      ['蒸芋头扣肉', '芋头粉糯，五花软烂'],
+      ['咸蛋蒸肉饼', '咸蛋黄香，肉饼嫩滑'],
+      ['清蒸桂花鱼', '鱼肉细嫩，蒸制锁鲜'],
+      ['蒸茄子', '蒜蓉酱油，清爽开胃'],
+      ['花雕蒸蟹', '黄酒提鲜，蟹肉甜美'],
+      ['蒸藕夹', '莲藕夹肉，蒸制软糯'],
+      ['鲍鱼蒸鸡', '高端蒸菜，鲜美滋补'],
+      ['清蒸比目鱼', '扁平鱼身，肉质细腻'],
+      ['枸杞蒸蛋', '养生搭配，嫩滑营养']
     ]
   },
   {
-    name: "炸物", emoji: "🍤", color: "#f39c12",
-    desc: "酥脆外衣包裹的罪恶快乐",
+    name: '🍤 炸物', color: '#f39c12', textColor: '#fff',
     foods: [
-      ["炸鸡", "韩式脆皮or美式原味，快乐加倍"],
-      ["天妇罗", "日式炸物，轻薄酥脆"],
-      ["锅包肉", "东北名菜，外酥里嫩酸甜口"],
-      ["炸薯条", "番茄酱or蜂蜜芥末，永远的配角王"],
-      ["炸鸡排", "厚实多汁，一口咬下超满足"],
-      ["炸春卷", "酥脆外皮裹着鲜香馅料"],
-      ["炸豆腐", "外焦里嫩，蘸辣酱绝配"],
-      ["炸鱿鱼圈", "海鲜的酥脆变身"],
-      ["炸洋葱圈", "甜脆交织，蘸酱百搭"],
-      ["炸虾天妇罗", "大虾裹衣，鲜脆弹牙"],
-      ["炸猪排", "日式炸物，厚切多汁"],
-      ["炸丸子", "肉丸弹牙，外酥里嫩"],
-      ["炸薯片", "薄脆咸香，追剧标配"],
-      ["炸香蕉", "外酥里软，甜品级炸物"],
-      ["炸鸡柳", "方便好吃，小朋友最爱"],
-      ["炸串", "万物皆可炸，蘸料是灵魂"],
-      ["炸平菇", "素菜炸出肉感，意外好吃"],
-      ["炸藕盒", "藕片夹肉，双重口感"],
-      ["炸麻花", "酥脆香甜，传统小食"],
-      ["炸冰淇淋", "外热内冷，冰火两重天"],
+      ['炸鸡', '韩式or美式，酥脆多汁'],
+      ['天妇罗', '日式炸物，轻薄酥脆'],
+      ['锅包肉', '东北名菜，酸甜酥脆'],
+      ['炸薯条', '经典快餐，外脆内软'],
+      ['炸鸡排', '厚切鸡胸，面包糠酥脆'],
+      ['炸春卷', '越南/中式，酥脆卷馅'],
+      ['炸虾天妇罗', '大虾裹浆，日式酥脆'],
+      ['炸洋葱圈', '金黄酥脆，蘸酱美味'],
+      ['炸豆腐', '外酥里嫩，蘸酱油吃'],
+      ['炸鱿鱼圈', '海鲜炸物，Q弹酥脆'],
+      ['炸排骨', '酥炸排骨，椒盐风味'],
+      ['炸鲜奶', '粤式甜品，外脆内滑'],
+      ['炸鱼薯条', '英式经典，塔塔酱配'],
+      ['炸茄盒', '茄子夹肉，酥炸金黄'],
+      ['炸藕盒', '莲藕夹馅，酥脆可口'],
+      ['炸南瓜饼', '甜糯酥脆，饭后小吃'],
+      ['炸臭豆腐', '闻着臭吃着香，长沙经典'],
+      ['炸鸡翅', '蜜汁or香辣，吮指回味'],
+      ['炸平菇', '菌菇炸物，酥脆鲜香'],
+      ['炸芋头条', '芋香酥脆，茶楼小食'],
+      ['炸响铃', '杭州名菜，腐皮炸脆'],
+      ['炸猪排', '日式猪排，厚切多汁'],
+      ['炸串', '关东煮风格，酱料丰富'],
+      ['炸薯片', '薄脆咸香，追剧必备'],
+      ['炸麻花', '北方面食，酥脆香甜'],
+      ['炸丸子', '肉丸酥炸，外焦里嫩'],
+      ['炸鸡柳', '条状鸡胸，方便食用'],
+      ['炸香蕉', '焦糖外皮，热带甜香'],
+      ['炸花生米', '下酒神器，酥脆咸香'],
+      ['炸冰淇淋', '热外冷内，反差口感']
     ]
   },
   {
-    name: "面食", emoji: "🍜", color: "#1abc9c",
-    desc: "面条的万千变化，一碗面就是一种人生",
+    name: '🍜 面食', color: '#1abc9c', textColor: '#fff',
     foods: [
-      ["牛肉拉面", "清汤白萝卜，经典兰州味"],
-      ["阳春面", "猪油酱油葱花，简约不简单"],
-      ["意大利面", "番茄肉酱or奶油培根，西式浪漫"],
-      ["炒面", "镬气十足，面条焦香"],
-      ["刀削面", "山西面食之王，筋道有嚼劲"],
-      ["担担面", "麻辣鲜香，四川灵魂面"],
-      ["炸酱面", "老北京招牌，酱香浓郁"],
-      ["云吞面", "竹升面配鲜虾云吞，广式经典"],
-      ["冷面", "朝鲜族夏日清凉，酸甜冰爽"],
-      ["biangbiang面", "陕西宽面，油泼辣子香"],
-      ["葱油拌面", "简单却上瘾，葱香满口"],
-      ["肉酱意面", "浓郁肉酱裹满每一根面条"],
-      ["酸辣粉", "酸辣开胃，红薯粉Q弹"],
-      ["螺蛳粉", "臭香闻名，越吃越上头"],
-      ["重庆小面", "麻辣鲜香，巴适得很"],
-      ["油泼面", "滚油泼辣椒，滋啦一声灵魂觉醒"],
-      ["海鲜面", "鲜虾蛤蜊鱿鱼，大海一碗装"],
-      ["打卤面", "京味家常，卤子丰盛"],
-      ["鸡汤面", "清鲜暖胃，生病时的治愈"],
-      ["咖喱乌冬", "日式粗面，浓汤裹身"],
+      ['牛肉拉面', '兰州经典，清汤牛肉'],
+      ['阳春面', '上海本帮，猪油葱香'],
+      ['意大利面', '番茄肉酱，西式经典'],
+      ['炒面', '镬气十足，面条焦香'],
+      ['担担面', '四川小吃，麻辣鲜香'],
+      ['炸酱面', '老北京，甜面酱炸酱'],
+      ['刀削面', '山西特色，面条筋道'],
+      ['拉条子', '新疆拌面，粗犷美味'],
+      ['云吞面', '广式竹升面，鲜虾云吞'],
+      ['葱油拌面', '上海简单美味，葱香四溢'],
+      ['酸辣粉', '红薯粉条，酸辣开胃'],
+      ['螺蛳粉', '柳州特色，臭香上瘾'],
+      ['热干面', '武汉过早，芝麻酱香'],
+      ['biangbiang面', '陕西宽面，油泼辣子'],
+      ['重庆小面', '麻辣鲜香，重庆人的命'],
+      ['片儿川', '杭州名面，雪菜笋片'],
+      ['岐山臊子面', '陕西经典，酸辣臊子'],
+      ['打卤面', '北方家常，卤汁丰富'],
+      ['油泼面', '滚油泼辣，香气炸裂'],
+      ['麻酱凉面', '夏日凉拌，芝麻酱香'],
+      ['冷面', '朝鲜族，酸甜冰爽'],
+      ['拌面', '新疆风味，番茄酱拌'],
+      ['卤面', '福建小吃，面条卤制'],
+      ['猫耳朵', '山西面食，小巧可爱'],
+      ['疙瘩汤', '面疙瘩，暖胃家常'],
+      ['面片汤', '新疆汤面，面片滑嫩'],
+      ['剪刀面', '山西特色，剪刀剪面'],
+      ['饸饹面', '北方压面，粗犷筋道'],
+      ['焦溜面', '面条炸焦，浇汁拌匀'],
+      ['奶油培根意面', '西式经典，奶香浓郁']
     ]
   },
   {
-    name: "米饭套餐", emoji: "🍚", color: "#d35400",
-    desc: "一碗好饭，配什么都香",
+    name: '🍚 米饭套餐', color: '#27ae60', textColor: '#fff',
     foods: [
-      ["煲仔饭", "锅巴焦香，腊味浓郁"],
-      ["盖浇饭", "一勺浇头，米饭重生"],
-      ["炒饭", "粒粒分明，蛋香扑鼻"],
-      ["卤肉饭", "台湾经典，肉燥拌饭香"],
-      ["咖喱饭", "浓郁咖喱，拌饭绝配"],
-      ["牛肉饭", "日式牛丼，甜咸适口"],
-      ["鸡腿饭", "炸鸡腿配饭，满足感爆棚"],
-      ["猪排饭", "炸猪排厚切，淋酱超香"],
-      ["蛋包饭", "番茄炒饭裹蛋皮，颜值味道双在线"],
-      ["扬州炒饭", "虾仁火腿青豆，炒饭标杆"],
-      ["鳗鱼饭", "日式经典，鳗鱼肥美饭香甜"],
-      ["排骨饭", "蒸出来的肉香饭软"],
-      ["黄焖鸡米饭", "浓汤焖鸡，米饭杀手"],
-      ["烤肉饭", "韩式拌饭风格，肉多饭香"],
-      ["酸菜鱼饭", "酸辣汤汁拌饭，开胃神器"],
-      ["红烧牛腩饭", "牛腩软烂，汤汁浓郁"],
-      ["三杯鸡饭", "台湾名菜，九层塔提香"],
-      ["梅菜扣肉饭", "咸香下饭，一口入魂"],
-      ["铁板牛排饭", "滋滋作响，仪式感拉满"],
-      ["香菇滑鸡饭", "蒸出来的鲜嫩，清淡养胃"],
+      ['煲仔饭', '砂锅焖饭，锅巴焦香'],
+      ['盖浇饭', '饭菜合一，酱汁拌饭'],
+      ['咖喱饭', '日式咖喱，浓郁下饭'],
+      ['卤肉饭', '台湾经典，卤汁拌饭'],
+      ['扬州炒饭', '粒粒分明，蛋香火腿'],
+      ['石锅拌饭', '韩式拌饭，锅巴脆香'],
+      ['海南鸡饭', '新加坡国菜，鸡油饭香'],
+      ['排骨饭', '蒸饭排骨，肉汁浸米'],
+      ['肥牛饭', '日式快餐，洋葱肥牛'],
+      ['鸡腿饭', '炸鸡腿配饭，满足感满分'],
+      ['鱼香茄子饭', '下饭菜，拌饭神器'],
+      ['回锅肉饭', '川味盖浇，豆瓣飘香'],
+      ['黄焖鸡米饭', '山东快餐，鸡块软烂'],
+      ['猪脚饭', '潮汕风味，猪脚软糯'],
+      ['牛肉饭', '吉野家风格，洋葱牛肉'],
+      ['亲子丼', '日式盖饭，鸡肉鸡蛋'],
+      ['鳗鱼饭', '日式经典，鳗鱼焦香'],
+      ['蛋包饭', '日式西餐，蛋皮包饭'],
+      ['什锦炒饭', '冰箱清理，万物可炒'],
+      ['咸蛋黄炒饭', '咸蛋黄沙，粒粒裹酱'],
+      ['腊味煲仔饭', '广式腊肠，锅巴焦脆'],
+      ['鸡公煲', '重庆风味，鸡肉焖饭'],
+      ['酸菜鱼饭', '酸菜鱼配饭，酸辣开胃'],
+      ['红烧牛肉饭', '牛肉软烂，汤汁拌饭'],
+      ['照烧鸡腿饭', '日式照烧，甜咸适口'],
+      ['麻辣香锅饭', '一锅乱炖，麻辣过瘾'],
+      ['台式卤味饭', '卤蛋卤肉，台湾风味'],
+      ['排骨蒸饭', '蒸制排骨，米饭吸汁'],
+      ['番茄鸡蛋饭', '国民组合，酸甜下饭'],
+      ['牛肉丼', '日式牛丼，简单美味']
     ]
   },
   {
-    name: "点心小吃", emoji: "🥟", color: "#e91e63",
-    desc: "一口一个的小幸福",
+    name: '🥟 点心小吃', color: '#e91e63', textColor: '#fff',
     foods: [
-      ["小笼包", "皮薄汤多，轻轻一咬满口鲜"],
-      ["煎饼果子", "天津街头早餐王者"],
-      ["肠粉", "广东早茶，滑嫩鲜香"],
-      ["饺子", "中国饺子，万物皆可包"],
-      ["生煎包", "底部焦脆，上部松软"],
-      ["锅贴", "煎饺的北方兄弟"],
-      ["烧麦", "粤式早茶，糯米馅料丰富"],
-      ["葱油饼", "外酥里软，葱香四溢"],
-      ["肉夹馍", "陕西经典，腊汁肉配白吉馍"],
-      ["煎饺", "底部金黄，饺子另一种打开方式"],
-      ["豆沙包", "甜软细腻，早餐常客"],
-      ["鲜肉包", "皮薄馅大，汤汁丰富"],
-      ["手抓饼", "层次分明，酥脆可口"],
-      ["鸡蛋灌饼", "饼中灌蛋，外酥内软"],
-      ["糯米鸡", "荷叶包裹，软糯鲜香"],
-      ["叉烧包", "广式三宝之一，甜咸交融"],
-      ["灌汤包", "汤包之王，吸管先喝汤"],
-      ["红糖糍粑", "软糯甜蜜，川渝小吃"],
-      ["钵仔糕", "Q弹爽滑，童年回忆"],
-      ["桃酥", "酥脆香甜，传统茶点"],
+      ['小笼包', '上海名点，皮薄汁多'],
+      ['煎饼果子', '天津早餐，酥脆蛋香'],
+      ['肠粉', '广东早茶，滑嫩米香'],
+      ['饺子', '北方经典，万物可包'],
+      ['虾饺', '广式早茶四大天王'],
+      ['烧卖', '糯米肉馅，蒸制点心'],
+      ['叉烧包', '粤式经典，甜咸适口'],
+      ['糯米鸡', '荷叶包裹，糯米咸香'],
+      ['春卷', '酥脆卷馅，节日必备'],
+      ['葱油饼', '北方面食，层次分明'],
+      ['手抓饼', '千层酥脆，可加蛋肠'],
+      ['生煎包', '上海特色，底部焦脆'],
+      ['锅贴', '煎饺变种，底部金黄'],
+      ['灌汤包', '开封名吃，汤汁满口'],
+      ['烧饼', '北方烤饼，芝麻焦香'],
+      ['糍粑', '糯米捶打，蘸糖蘸黄豆粉'],
+      ['凉皮', '陕西小吃，酸辣爽滑'],
+      ['肉夹馍', '陕西经典，腊汁肉饼'],
+      ['鸡蛋灌饼', '薄饼灌蛋，街头早餐'],
+      ['红糖糍粑', '火锅店标配，甜糯酥脆'],
+      ['凤爪', '广式早茶，软烂脱骨'],
+      ['排骨蒸陈村粉', '广东小吃，粉皮滑嫩'],
+      ['水晶饺', '透明皮，馅料可见'],
+      ['榴莲酥', '粤式酥皮，榴莲流心'],
+      ['蛋挞', '葡式或港式，酥皮嫩心'],
+      ['鲜肉月饼', '上海特色，酥皮肉馅'],
+      ['驴打滚', '北京小吃，豆面糯米'],
+      ['艾糍', '清明时令，艾草清香'],
+      ['白糖糕', '广东甜点，米香清甜'],
+      ['蟹壳黄', '上海烧饼，酥脆咸甜']
     ]
   },
   {
-    name: "火锅麻辣", emoji: "🍲", color: "#c0392b",
-    desc: "围炉而坐，热气腾腾的人生",
+    name: '🍲 火锅麻辣', color: '#c0392b', textColor: '#fff',
     foods: [
-      ["麻辣火锅", "红油翻滚，越辣越上瘾"],
-      ["涮羊肉", "老北京铜锅，清汤配麻酱"],
-      ["麻辣烫", "一个人的火锅，自由搭配"],
-      ["串串香", "竹签串起的小火锅"],
-      ["毛肚火锅", "七上八下，脆嫩爽口"],
-      ["鸳鸯锅", "左右逢源，辣与不辣兼得"],
-      ["九宫格火锅", "格格分明，各烫各的"],
-      ["酸菜白肉锅", "东北风味，酸爽开胃"],
-      ["菌菇火锅", "鲜到极致，养生首选"],
-      ["椰子鸡火锅", "清甜滋补，海南风味"],
-      ["潮汕牛肉火锅", "现切鲜牛肉，涮几秒就吃"],
-      ["鱼火锅", "鲜鱼入锅，汤底奶白"],
-      ["番茄火锅", "酸甜开胃，不吃辣的首选"],
-      ["冒菜", "一人食火锅的另一种形式"],
-      ["钵钵鸡", "冷串串，红油浸泡入味"],
-      ["寿喜烧", "日式火锅，甜咸鲜香"],
-      ["泰式冬阴功火锅", "酸辣椰香，东南亚风情"],
-      ["鹅肠火锅", "脆嫩爽口，火锅必点"],
-      ["黄喉火锅", "猪黄喉or牛黄喉，脆到飞起"],
-      ["鸭血豆腐锅", "麻辣鲜香，血嫩豆腐滑"],
+      ['麻辣火锅', '川渝经典，红油翻滚'],
+      ['涮羊肉', '老北京铜锅，清汤涮肉'],
+      ['麻辣烫', '一人食火锅，串串选材'],
+      ['串串香', '成都街头，竹签串串'],
+      ['毛肚火锅', '川渝火锅灵魂，七上八下'],
+      ['九宫格火锅', '重庆特色，分区煮食'],
+      ['鸳鸯锅', '麻辣清汤双拼，众口可调'],
+      ['酸汤鱼火锅', '贵州风味，酸辣开胃'],
+      ['椰子鸡火锅', '海南清甜，椰汁煮鸡'],
+      ['潮汕牛肉火锅', '鲜切牛肉，沙茶蘸料'],
+      ['菌菇火锅', '云南山珍，鲜到掉眉'],
+      ['鱼头火锅', '胖头鱼头，汤白味浓'],
+      ['啤酒鸭火锅', '鸭肉啤酒，醇香浓郁'],
+      ['猪肚鸡火锅', '广东胡椒猪肚鸡'],
+      ['冒菜', '成都街头，一人火锅'],
+      ['钵钵鸡', '冷串串，红油浸泡'],
+      ['寿喜烧', '日式火锅，甜酱油汤底'],
+      ['涮涮锅', '日式一人火锅，清淡鲜美'],
+      ['麻辣香锅', '一锅炒制，麻辣干香'],
+      ['干锅牛蛙', '干锅系列，蛙肉鲜嫩'],
+      ['火锅鸡', '鸡肉火锅，河北特色'],
+      ['酸菜鱼火锅', '酸菜配鱼，酸辣过瘾'],
+      ['花胶鸡火锅', '高端火锅，胶质满满'],
+      ['牛杂煲', '广东煲仔，牛杂软烂'],
+      ['萝卜牛腩煲', '广式煲仔，萝卜清甜'],
+      ['水煮鱼火锅', '鱼片滑嫩，麻辣红汤'],
+      ['蹄花汤锅', '猪蹄炖汤，软糯滋补'],
+      ['肥肠火锅', '肥肠爱好者天堂'],
+      ['粥底火锅', '广东顺德，粥水涮食'],
+      ['泰式冬阴功火锅', '酸辣椰浆，东南亚风味']
     ]
   },
   {
-    name: "日韩料理", emoji: "🍣", color: "#9b59b6",
-    desc: "精致摆盘里的东方美学",
+    name: '🍣 日韩料理', color: '#9b59b6', textColor: '#fff',
     foods: [
-      ["寿司刺身", "鱼生鲜美，醋饭微酸"],
-      ["味噌拉面", "浓郁味噌汤底，日式经典"],
-      ["石锅拌饭", "韩式拌饭，锅巴焦香"],
-      ["泡菜豆腐", "韩式家常，酸辣开胃"],
-      ["天妇罗定食", "日式套餐，炸物配米饭"],
-      ["韩式炸鸡", "甜辣or酱油，配啤酒绝了"],
-      ["冷面", "朝鲜族冰爽酸甜"],
-      ["鳗鱼寿司", "鳗鱼肥美，酱汁浓郁"],
-      ["辣炒年糕", "韩式街头小吃，甜辣弹牙"],
-      ["照烧鸡腿饭", "日式经典，酱香浓郁"],
-      ["三文鱼刺身", "橙红鱼生，入口即化"],
-      ["部队锅", "韩式杂烩锅，香肠午餐肉齐聚"],
-      ["亲子丼", "鸡肉鸡蛋盖饭，日式家常"],
-      ["泡菜炒饭", "酸辣开胃，韩式风味"],
-      ["生鱼片拼盘", "多种鱼生，丰盛宴席感"],
-      ["关东煮", "日式煮物，暖胃治愈"],
-      ["紫菜包饭", "韩式饭卷，方便美味"],
-      ["豚骨拉面", "浓白猪骨汤，面条筋道"],
-      ["烧鸟", "日式烤串，盐烤酱烤各有千秋"],
-      ["大酱汤", "韩式经典汤品，配饭一流"],
+      ['寿司', '日式经典，醋饭配鱼'],
+      ['刺身', '生鱼片，蘸芥末酱油'],
+      ['味噌拉面', '浓郁味噌汤底，日式拉面'],
+      ['石锅拌饭', '韩式拌饭，锅巴焦香'],
+      ['泡菜豆腐', '韩式家常，辣白菜配豆腐'],
+      ['天妇罗定食', '日式套餐，炸物配饭'],
+      ['日式咖喱', '日式咖喱饭，甜润温和'],
+      ['韩式炸鸡', '炸鸡配啤酒，韩剧标配'],
+      ['部队锅', '韩式乱炖，午餐肉芝士'],
+      ['冷面', '朝鲜族，酸甜冰爽'],
+      ['日式牛肉盖饭', '吉野家同款，洋葱牛肉'],
+      ['泡菜炒饭', '韩式炒饭，泡菜提味'],
+      ['鳗鱼饭', '日式经典，鳗鱼焦香'],
+      ['亲子丼', '鸡肉鸡蛋盖饭，日式家常'],
+      ['蛋包饭', '日式西餐，蛋皮包饭'],
+      ['日式炸猪排', '厚切猪排，酥脆多汁'],
+      ['辣炒年糕', '韩式街头，甜辣软糯'],
+      ['寿司卷', '海苔裹饭，内馅丰富'],
+      ['关东煮', '日式煮物，萝卜鱼丸'],
+      ['韩式烤肉', '五花肉生菜包，韩式经典'],
+      ['味噌汤', '日式汤品，豆腐海带'],
+      ['日式照烧鸡', '甜咸照烧酱，焦香嫩滑'],
+      ['韩式拌饭', '蔬菜肉类拌饭，营养全面'],
+      ['刺身拼盘', '多种生鱼片组合'],
+      ['日式茶碗蒸', '蒸蛋羹，日式精致'],
+      ['韩式大酱汤', '韩式汤品，大酱浓郁'],
+      ['炸物定食', '日式套餐，炸虾炸鱼'],
+      ['韩式脊骨汤', '猪脊骨炖汤，韩式暖胃'],
+      ['日式鲷鱼烧', '小鱼形状，红豆馅甜品'],
+      ['韩式参鸡汤', '整鸡塞糯米，滋补养生']
     ]
   },
   {
-    name: "异国风味", emoji: "🍛", color: "#16a085",
-    desc: "舌尖上的环球旅行",
+    name: '🍛 异国风味', color: '#d35400', textColor: '#fff',
     foods: [
-      ["泰式咖喱", "椰浆咖喱，香甜微辣"],
-      ["冬阴功汤", "酸辣虾汤，泰国国汤"],
-      ["印度飞饼", "酥脆层次，蘸咖喱绝配"],
-      ["越南春卷", "米皮包裹，清爽健康"],
-      ["墨西哥卷饼", "Taco时光，芝士牛肉满满"],
-      ["希腊沙拉", "地中海风味，清爽健康"],
-      ["法式牛排", "浪漫法餐，肉嫩多汁"],
-      ["西班牙海鲜饭", "藏红花染色，海鲜丰富"],
-      ["俄式罗宋汤", "甜菜根汤，浓郁酸甜"],
-      ["新加坡海南鸡饭", "鸡肉嫩滑，米饭喷香"],
-      ["马来西亚叻沙", "椰浆米粉，酸辣浓汤"],
-      ["印度咖喱鸡", "香料王国，浓郁复杂"],
-      ["日式咖喱", "日式改良，甜润温和"],
-      ["土耳其烤肉", "旋转烤肉，夹饼超香"],
-      ["摩洛哥塔吉锅", "北非炖菜，香料馥郁"],
-      ["泰式炒河粉", "Pad Thai，酸甜咸鲜"],
-      ["英式炸鱼薯条", "经典英伦，简单美味"],
-      ["德式香肠", "啤酒节标配，肉质扎实"],
-      ["法式奶油蘑菇汤", "浓郁丝滑，面包蘸着吃"],
-      ["黎巴嫩烤肉卷", "中东风味，香料独特"],
+      ['泰式咖喱', '椰浆咖喱，酸辣甜香'],
+      ['冬阴功汤', '泰式酸辣虾汤，开胃神器'],
+      ['印度飞饼', '甩饼大师，酥脆分层'],
+      ['沙拉', '西式轻食，蔬菜健康'],
+      ['越南河粉', 'Pho，牛骨清汤配米粉'],
+      ['泰式炒河粉', 'Pad Thai，酸甜咸鲜'],
+      ['印度咖喱鸡', '浓郁咖喱，香料丰富'],
+      ['新加坡海南鸡饭', '鸡油饭配白斩鸡'],
+      ['马来西亚叻沙', '椰浆汤面，酸辣浓郁'],
+      ['墨西哥Taco', '玉米饼夹肉，墨西哥灵魂'],
+      ['希腊沙拉', '地中海风味，橄榄油芝士'],
+      ['法式焗蜗牛', '法餐经典，蒜香黄油'],
+      ['西班牙海鲜饭', 'Paella，藏红花染色'],
+      ['俄罗斯罗宋汤', '甜菜根汤，东欧经典'],
+      ['德式香肠', '巴伐利亚，啤酒节标配'],
+      ['英式炸鱼薯条', 'Fish & Chips，塔塔酱'],
+      ['美式汉堡', '牛肉饼芝士，美式经典'],
+      ['法式鹅肝', '法餐奢侈，入口即化'],
+      ['意式烩饭', 'Risotto，奶油米粒'],
+      ['摩洛哥塔吉锅', '北非炖菜，香料浓郁'],
+      ['土耳其烤肉', 'Doner Kebab，旋转烤'],
+      ['泰式绿咖喱', '椰浆青椒，泰式辛辣'],
+      ['越南春卷', '米纸包裹，清新爽口'],
+      ['印度马沙拉', '香料混合物，印度灵魂'],
+      ['法式洋葱汤', '焦糖洋葱，芝士面包'],
+      ['希腊酸奶', '浓稠酸奶，蜂蜜坚果'],
+      ['墨西哥玉米片', 'Nachos，芝士酱蘸'],
+      ['意式提拉米苏', '咖啡酒香，层层叠叠'],
+      ['中东烤肉卷', '皮塔饼夹肉，中东快餐'],
+      ['泰式芒果糯米饭', '甜芒果配椰浆糯米']
     ]
   },
   {
-    name: "轻食沙拉", emoji: "🥗", color: "#27ae60",
-    desc: "轻盈无负担，健康也可以很美味",
+    name: '🥗 轻食沙拉', color: '#2ecc71', textColor: '#fff',
     foods: [
-      ["鸡胸肉沙拉", "高蛋白低脂，健身首选"],
-      ["水果沙拉", "缤纷水果，天然甜味"],
-      ["凯撒沙拉", "经典西式，帕玛森加持"],
-      ["藜麦沙拉", "超级食物，营养均衡"],
-      ["牛油果沙拉", " creamy口感，健康脂肪"],
-      ["希腊酸奶碗", "酸奶配坚果水果，早餐优选"],
-      ["蔬菜三明治", "全麦面包夹满鲜蔬"],
-      ["鲜虾沙拉", "虾仁配生菜，清爽鲜甜"],
-      ["波奇碗", "夏威夷风味，生鱼配饭"],
-      ["轻食卷", "全麦卷饼裹满蔬菜"],
-      ["水果燕麦碗", "隔夜燕麦，营养丰富"],
-      ["豆腐沙拉", "日式冷豆腐，清爽开胃"],
-      ["鹰嘴豆沙拉", "地中海风味，蛋白质丰富"],
-      ["烟熏三文鱼沙拉", "鱼生配菜，高级轻食"],
-      ["烤蔬菜沙拉", "烤南瓜芦笋，焦香微甜"],
-      ["鸡丝凉面沙拉", "中西合璧，清爽开胃"],
-      ["鲜果smoothie碗", "冰沙配水果，颜值爆表"],
-      ["全麦帕尼尼", "意式三明治，轻食也有灵魂"],
-      ["蔬菜寿司卷", "黄瓜牛油果，素食寿司"],
-      ["抹茶酸奶杯", "日式抹茶配希腊酸奶"],
+      ['凯撒沙拉', '罗马生菜，帕玛森芝士'],
+      ['水果沙拉', '多种水果，酸奶或蜂蜜'],
+      ['鸡胸肉沙拉', '高蛋白，减脂必备'],
+      ['牛油果沙拉', '牛油果营养，健康脂肪'],
+      ['藜麦沙拉', '超级食物藜麦，营养均衡'],
+      ['希腊沙拉', '番茄黄瓜，菲达芝士'],
+      ['烟熏三文鱼沙拉', '北欧风味，Omega-3'],
+      ['羽衣甘蓝沙拉', '超级蔬菜，抗氧化'],
+      ['鸡蛋沙拉', '水煮蛋配生菜，简单健康'],
+      ['金枪鱼沙拉', '罐头金枪鱼，蛋白质丰富'],
+      ['豆腐沙拉', '日式冷豆腐，姜丝酱油'],
+      ['烤南瓜沙拉', '烤南瓜甜软，坚果碎'],
+      ['西兰花沙拉', '焯水西兰花，蒜蓉醋汁'],
+      ['鲜虾沙拉', '白灼虾配蔬菜，低脂高蛋白'],
+      ['牛排沙拉', '切片牛排，混合生菜'],
+      ['鸡丝沙拉', '手撕鸡胸，芝麻酱汁'],
+      ['水果燕麦碗', '燕麦水果坚果，早餐轻食'],
+      ['烤鸡腿沙拉', '去皮鸡腿，柠檬汁调味'],
+      ['鹰嘴豆沙拉', '中东豆类，饱腹健康'],
+      ['什锦蔬菜沙拉', '多种生菜，油醋汁'],
+      ['寿司沙拉', '醋饭配生鱼片，日式轻食'],
+      ['荞麦面沙拉', '日式荞麦，冷面沙拉'],
+      ['烤茄子沙拉', '烤茄子配番茄丁，地中海风'],
+      ['番茄马苏里拉', '意式经典，罗勒叶'],
+      ['冷面沙拉', '荞麦冷面，蔬菜配'],
+      ['豆腐蔬菜碗', '日式冷豆腐，多种蔬菜'],
+      ['蛋白质碗', '鸡胸虾仁蛋，健身必备'],
+      ['烤蔬菜拼盘', '多种蔬菜烤制，橄榄油'],
+      ['青苹果核桃沙拉', '酸甜脆香，开胃前菜'],
+      ['能量碗', '超级食物大集合，营养满分']
     ]
   },
   {
-    name: "西式快餐", emoji: "🍕", color: "#e74c3c",
-    desc: "快乐肥宅水配炸鸡，快乐就是这么简单",
+    name: '🍕 西式快餐', color: '#e74c3c', textColor: '#fff',
     foods: [
-      ["披萨", "芝士拉丝， toppings自由搭"],
-      ["汉堡", "牛肉饼夹面包，经典永不过时"],
-      ["炸薯条", "金黄酥脆，番茄酱的灵魂伴侣"],
-      ["芝士汉堡", "双层芝士，罪恶但快乐"],
-      ["培根芝士汉堡", "咸香培根加持，肉食狂欢"],
-      ["夏威夷披萨", "菠萝配火腿，争议之王"],
-      ["薯条冰淇淋", "冰火两重天，甜食新玩法"],
-      ["洋葱圈", "酥脆微甜，蘸酱百搭"],
-      ["炸鸡桶", "全家桶的快乐，分享更开心"],
-      ["热狗", "香肠夹面包，街头经典"],
-      ["墨西哥玉米片", "Nachos配芝士酱，派对必备"],
-      ["芝士条", "油炸芝士，拉丝超长"],
-      ["鸡块", "蘸酱随心，Nuggets forever"],
-      ["意式帕尼尼", "烤三明治，简单美味"],
-      ["美式松饼", "枫糖浆浇头，早餐之王"],
-      ["布朗尼", "巧克力方块，浓郁扎实"],
-      ["芝士蛋糕", "免烤or烘焙，甜品经典"],
-      ["甜甜圈", "糖粉or糖霜，甜蜜圆圈"],
-      ["苹果派", "酥皮包裹苹果，美式经典"],
-      ["奶昔", "冰淇淋打底，浓郁丝滑"],
+      ['披萨', '意式薄底或美式厚底'],
+      ['汉堡', '牛肉饼芝士，美式经典'],
+      ['薯条', '炸土豆条，蘸番茄酱'],
+      ['炸鸡块', '鸡胸肉块，蘸酱多样'],
+      ['热狗', '香肠面包，芥末番茄酱'],
+      ['芝士汉堡', '双层芝士，拉丝满足'],
+      ['培根芝士堡', '烟熏培根，咸香浓郁'],
+      ['炸洋葱圈', '金黄酥脆，蘸酱美味'],
+      ['烤奶酪三明治', '美式经典，简单满足'],
+      ['炸鱼三明治', '白鱼炸制，塔塔酱'],
+      ['鸡肉卷', '墨西哥卷饼，鸡肉蔬菜'],
+      ['牛肉塔可', '墨西哥玉米饼，牛肉馅'],
+      ['芝士条', '炸芝士条，拉丝诱惑'],
+      ['夏威夷披萨', '菠萝火腿，甜咸争议'],
+      ['意式千层面', 'Lasagna，层层肉酱'],
+      ['墨西哥卷饼', 'Burrito，大号卷饼'],
+      ['炸鸡翅', ' Buffalo Wings，辣酱黄油'],
+      ['芝士薯条', '薯条加芝士酱，罪恶美味'],
+      ['培根蛋堡', '早餐汉堡，培根鸡蛋'],
+      ['玉米片拼盘', 'Nachos，芝士酱牛肉'],
+      ['迷你汉堡', 'Slider，一口一个'],
+      ['炸薯饼', '波浪薯片，酥脆咸香'],
+      ['俱乐部三明治', '三层夹心，经典美式'],
+      ['牛肉馅饼', '肉馅酥皮，英式派'],
+      ['苹果派', '美式甜派，肉桂苹果'],
+      ['芝士蛋糕', '纽约风格，浓郁绵密'],
+      ['布朗尼', '巧克力软心，美式甜品'],
+      ['甜甜圈', '糖霜圈圈，早餐甜点'],
+      ['可颂三明治', '法式可颂夹蛋芝士'],
+      ['炸鸡三明治', '炸鸡排夹面包，美式快餐']
     ]
   },
   {
-    name: "街头小吃", emoji: "🍢", color: "#f1c40f",
-    desc: "路边摊的烟火气，最抚凡人心",
+    name: '🍢 街头小吃', color: '#ff7043', textColor: '#fff',
     foods: [
-      ["臭豆腐", "闻着臭吃着香，越嚼越上头"],
-      ["烤冷面", "东北夜市之王，酸甜酱汁"],
-      ["铁板鱿鱼", "夜市标配，铁板滋滋响"],
-      ["麻辣烫", "自选食材，麻辣鲜香"],
-      ["关东煮", "日式煮物，暖胃治愈"],
-      ["章鱼小丸子", "日式小吃，外酥内软"],
-      ["煎饼果子", "绿豆面摊鸡蛋，加薄脆"],
-      ["鸡蛋仔", "香港街头，外脆内软"],
-      ["烤红薯", "冬日街头，香甜暖手"],
-      ["冰糖葫芦", "酸甜山楂裹糖衣，童年记忆"],
-      ["炒冰", "冰块炒水果，夏日清凉"],
-      ["螺蛳粉", "臭香酸辣，越吃越上瘾"],
-      ["沙县小吃", "中华快餐，蒸饺炖罐拌面"],
-      ["烤面筋", "素食烧烤，弹牙入味"],
-      ["炸串", "万物皆可炸，刷酱即正义"],
-      ["凉皮", "陕西小吃，酸辣爽滑"],
-      ["肉夹馍", "腊汁肉配馍，中式汉堡"],
-      ["豆汁焦圈", "老北京早餐，独特风味"],
-      ["葱油粑粑", "湖南炸物，葱香酥脆"],
-      ["钵仔糕", "广东街头，Q弹甜蜜"],
+      ['臭豆腐', '长沙经典，闻臭吃香'],
+      ['烤冷面', '东北街头，酸甜辣酱'],
+      ['章鱼小丸子', '日式街头，章鱼烧'],
+      ['煎饼果子', '天津早餐，酥脆蛋香'],
+      ['炸串', '路边摊，万物可炸'],
+      ['烤面筋', '手工面筋，麻辣鲜香'],
+      ['鸡蛋仔', '香港街头，外脆内软'],
+      ['钵仔糕', '广东甜品，米糕Q弹'],
+      ['糖葫芦', '冰糖葫芦，酸甜童年'],
+      ['铁板鱿鱼', '铁板爆炒，酱香浓郁'],
+      ['手抓饼', '千层酥脆，加蛋加肠'],
+      ['葱油饼', '北方面食，层次酥脆'],
+      ['麻辣烫', '一人食，串串自选'],
+      ['烤红薯', '秋冬街头，甜软流蜜'],
+      ['凉皮', '陕西小吃，酸辣爽滑'],
+      ['肉夹馍', '陕西经典，腊汁肉饼'],
+      ['豆浆油条', '国民早餐，绝配组合'],
+      ['糍粑', '糯米捶打，蘸糖蘸粉'],
+      ['烤肠', '街头烤肠，油脂焦香'],
+      ['关东煮', '日式煮物，萝卜鱼丸'],
+      ['蚵仔煎', '台湾夜市，蚵仔煎蛋'],
+      ['炒河粉', '干炒牛河，镬气十足'],
+      ['烧鹅腿饭', '香港街头，烧鹅焦香'],
+      ['糖炒栗子', '秋冬糖炒，香甜粉糯'],
+      ['炸糕', '北方甜食，外酥内软'],
+      ['凉粉', '西南小吃，酸辣清凉'],
+      ['担担面', '四川街头，麻辣鲜香'],
+      ['葱抓饼', '台湾夜市，酥脆葱香'],
+      ['烧仙草', '台湾甜品，仙草冻'],
+      ['爆米花', '焦糖或咸味，影院零食']
     ]
   },
   {
-    name: "粥粉面", emoji: "🥣", color: "#bdc3c7",
-    desc: "一碗热粥粉面，最朴实的温暖",
+    name: '🥣 粥粉面', color: '#5dade2', textColor: '#fff',
     foods: [
-      ["白粥配咸菜", "最简约的养胃搭配"],
-      ["皮蛋瘦肉粥", "广式经典，绵滑鲜香"],
-      ["海鲜粥", "鲜虾蟹粥，潮汕风味"],
-      ["云吞面", "竹升面配鲜虾云吞"],
-      ["肠粉", "米浆蒸制，滑嫩鲜香"],
-      ["牛肉河粉", "越南风味，汤清味鲜"],
-      ["猪杂汤粉", "猪杂丰盛，汤底鲜甜"],
-      ["绿豆沙", "清热解暑，甜品粥品"],
-      ["红豆沙", "细腻甜蜜，温暖心胃"],
-      ["八宝粥", "八种食材，甜蜜粘稠"],
-      ["艇仔粥", "广州传统，料多味鲜"],
-      ["生滚鱼片粥", "鱼片嫩滑，粥底绵密"],
-      ["炒河粉", "干炒牛河，镬气十足"],
-      ["粿条汤", "潮汕特色，汤清味鲜"],
-      ["米线", "云南过桥米线，汤鲜料多"],
-      ["酸辣粉", "红薯粉条，酸辣开胃"],
-      ["米粉", "桂林米粉，卤水鲜香"],
-      ["糯米粥", "软糯粘稠，养胃首选"],
-      ["鸡丝粥", "清淡鲜美，病中治愈"],
-      ["鸭血粉丝汤", "南京经典，鲜香暖胃"],
+      ['白粥', '广式粥底，绵滑养胃'],
+      ['皮蛋瘦肉粥', '广东经典，咸香暖胃'],
+      ['艇仔粥', '广州特色，鱼片花生'],
+      ['潮汕砂锅粥', '海鲜粥品，鲜甜浓郁'],
+      ['及第粥', '猪肝猪肚，广式粥品'],
+      ['牛肉粥', '牛肉滑嫩，粥底绵滑'],
+      ['南瓜粥', '韩式粥品，甜糯养胃'],
+      ['海鲜粥', '虾蟹煮粥，鲜到掉眉'],
+      ['小米粥', '北方养生，养胃暖心'],
+      ['八宝粥', '甜粥杂烩，营养全面'],
+      ['云吞面', '广式竹升面，鲜虾云吞'],
+      ['牛肉丸粉', '潮汕牛肉丸，弹牙鲜美'],
+      ['猪杂汤粉', '猪杂汤配米粉，广东早餐'],
+      ['肠粉', '米浆蒸制，滑嫩鲜美'],
+      ['炒牛河', '干炒牛河，镬气十足'],
+      ['鱼片粥', '生鱼片煮粥，广式早茶'],
+      ['排骨粥', '排骨炖粥，咸鲜滋补'],
+      ['绿豆粥', '夏日清甜，消暑解渴'],
+      ['红豆粥', '甜糯红豆，暖胃甜品'],
+      ['鸭肉粥', '潮汕风味，鸭肉鲜甜'],
+      ['生滚粥', '滚粥烫熟生料，广东特色'],
+      ['米线', '云南过桥或酸汤米线'],
+      ['粿条', '潮汕粿条，炒或汤'],
+      ['河粉汤', '清汤河粉，牛肉或猪杂'],
+      ['糯米鸡粥', '糯米鸡肉煮粥，咸香'],
+      ['猪肝粥', '补血养胃，广式粥品'],
+      ['菜干粥', '菜干咸香，广东家常'],
+      ['鱼骨粥', '鱼骨熬粥，鲜甜补钙'],
+      ['柴鱼花生粥', '广东粥品，花生绵密'],
+      ['咸蛋瘦肉粥', '咸蛋黄沙，瘦肉嫩滑']
     ]
   },
   {
-    name: "甜品饮品", emoji: "🍰", color: "#ff69b4",
-    desc: "生活已经够苦了，需要一点甜",
+    name: '🍰 甜品饮品', color: '#f368e0', textColor: '#fff',
     foods: [
-      ["提拉米苏", "意式经典，咖啡酒香"],
-      ["冰淇淋", "夏日快乐水，口味百变"],
-      ["奶茶", "珍珠奶茶的全民狂欢"],
-      ["水果拼盘", "当季鲜果，天然甜蜜"],
-      ["芒果班戟", "港式甜品，芒果奶油裹薄皮"],
-      ["杨枝甘露", "芒果柚子西米，港式经典"],
-      ["双皮奶", "顺德特产，奶香浓郁"],
-      ["抹茶蛋糕", "日式抹茶，微苦回甘"],
-      ["泡芙", "酥皮灌奶油，一口爆浆"],
-      ["马卡龙", "法式甜点，缤纷色彩"],
-      ["焦糖布丁", "滑嫩焦香，甜蜜诱惑"],
-      ["水果茶", "鲜果泡茶，清爽解腻"],
-      ["巧克力慕斯", "丝滑浓郁，甜品控天堂"],
-      ["鲜芋仙", "芋圆仙草，台式甜品"],
-      ["冰粉", "四川冰粉，红糖芝麻花生碎"],
-      ["绿豆汤", "夏日解暑，清甜消暑"],
-      ["刨冰", "雪花冰配炼乳水果"],
-      ["可丽露", "法式小点心，焦脆软糯"],
-      ["司康饼", "英式下午茶，配奶油果酱"],
-      ["奶黄包", "广式早茶，流心奶黄"],
+      ['提拉米苏', '意式经典，咖啡酒香'],
+      ['冰淇淋', '多种口味，冰凉甜蜜'],
+      ['水果拼盘', '时令水果，清爽解腻'],
+      ['芒果布丁', '芒果香甜，布丁嫩滑'],
+      ['抹茶蛋糕', '日式抹茶，微苦回甘'],
+      ['珍珠奶茶', '台湾发明，嚼得到珍珠'],
+      ['芝士蛋糕', '纽约风格，浓郁绵密'],
+      ['芒果班戟', '港式甜品，奶油芒果'],
+      ['双皮奶', '广东甜品，奶香浓郁'],
+      ['杨枝甘露', '芒果西柚，港式经典'],
+      ['红豆沙', '广式糖水，红豆绵密'],
+      ['绿豆沙', '清热解暑，沙沙口感'],
+      ['西米露', '芒果or椰汁，Q弹爽滑'],
+      ['刨冰', '夏日消暑，甜蜜冰爽'],
+      ['焦糖布丁', '法式甜品，焦糖脆壳'],
+      ['马卡龙', '法式甜点，缤纷色彩'],
+      ['泡芙', '酥皮奶油，一口爆浆'],
+      ['巧克力慕斯', '浓郁巧克力，丝滑入口'],
+      ['草莓大福', '日式糯米团，草莓奶油'],
+      ['椰汁西米露', '椰香清甜，Q弹西米'],
+      ['鲜果茶', '水果茶饮，清爽解渴'],
+      ['拿铁咖啡', '奶咖经典，拉花艺术'],
+      ['黑森林蛋糕', '樱桃巧克力，德式经典'],
+      ['桂花糕', '江南甜点，桂花清香'],
+      ['冰糖雪梨', '润肺糖水，清甜滋润'],
+      ['桃胶炖奶', '滋补甜品，胶质满满'],
+      ['豆花', '甜or咸，嫩滑豆香'],
+      ['姜撞奶', '广东甜品，姜辣奶香'],
+      ['水果茶冻', '茶底果冻，Q弹清爽'],
+      ['奶盖茶', '咸奶盖，茶底清新']
     ]
   },
+  {
+    name: '🐟 海鲜水产', color: '#0097a7', textColor: '#fff',
+    foods: [
+      ['清蒸石斑鱼', '高端海鲜，原汁原味'],
+      ['红烧鱼', '家常做法，浓油赤酱'],
+      ['水煮鱼', '麻辣红汤，鱼片滑嫩'],
+      ['糖醋鱼', '酸甜酥脆，宴席常客'],
+      ['烤鱼', '整条烤制，麻辣鲜香'],
+      ['酸菜鱼', '酸辣开胃，鱼肉嫩滑'],
+      ['剁椒鱼头', '湘菜代表，鲜辣过瘾'],
+      ['清蒸鲈鱼', '粤菜经典，鱼肉鲜嫩'],
+      ['松鼠桂鱼', '苏州名菜，酸甜酥脆'],
+      ['烤生蚝', '蒜蓉粉丝，鲜美多汁'],
+      ['蒜蓉蒸虾', '鲜虾蒜香，简单美味'],
+      ['白灼虾', '粤式白灼，蘸酱油吃'],
+      ['油焖大虾', '渤海对虾，浓郁酱香'],
+      ['椒盐虾', '酥脆虾壳，咸香可口'],
+      ['避风塘炒蟹', '香港名菜，蒜酥蟹香'],
+      ['姜葱炒蟹', '蟹肉鲜甜，姜葱提香'],
+      ['螃蟹粥', '蟹肉煮粥，鲜甜浓郁'],
+      ['清蒸大闸蟹', '秋风起蟹脚痒，清蒸最鲜'],
+      ['麻辣小龙虾', '宵夜之王，麻辣鲜香'],
+      ['蒜蓉小龙虾', '蒜香浓郁，虾肉弹牙'],
+      ['十三香龙虾', '多种香料，龙虾入味'],
+      ['扇贝粉丝', '蒜蓉粉丝，海鲜烧烤'],
+      ['鲍鱼炖汤', '高级海鲜，滋补养颜'],
+      ['海参炖鸡', '高档滋补，胶质丰富'],
+      ['鱿鱼须炒韭菜', '海鲜炒菜，鲜香下饭'],
+      ['铁板鱿鱼', '铁板爆炒，酱香浓郁'],
+      ['鲅鱼饺子', '山东特色，鱼肉馅饺'],
+      ['鱼丸汤', '潮汕鱼丸，弹牙鲜美'],
+      ['海带排骨汤', '海藻排骨，清淡滋补'],
+      ['三文鱼刺身', '挪威三文鱼，肥美新鲜']
+    ]
+  },
+  {
+    name: '🥬 素食斋菜', color: '#66bb6a', textColor: '#fff',
+    foods: [
+      ['麻婆豆腐', '素版麻婆，麻辣鲜香'],
+      ['地三鲜', '土豆茄子青椒，东北经典'],
+      ['干煸四季豆', '煸炒至虎皮，麻辣干香'],
+      ['蒜蓉西兰花', '蒜香清脆，健康清淡'],
+      ['清炒时蔬', '当季蔬菜，简单清炒'],
+      ['红烧茄子', '浓油赤酱，软糯入味'],
+      ['素炒面', '蔬菜炒面，镬气十足'],
+      ['香菇菜心', '广式炒菜，清淡鲜美'],
+      ['凉拌黄瓜', '蒜泥醋汁，爽脆开胃'],
+      ['拍黄瓜', '蒜蓉辣椒，夏日凉菜'],
+      ['醋溜白菜', '酸爽脆嫩，冬日暖胃'],
+      ['素春卷', '蔬菜馅卷，酥脆清新'],
+      ['素饺子', '韭菜鸡蛋或白菜豆腐'],
+      ['素炒饭', '什锦蔬菜炒饭，色彩缤纷'],
+      ['南瓜汤', '奶油南瓜，甜糯浓郁'],
+      ['罗宋汤', '蔬菜版，酸甜开胃'],
+      ['素三鲜', '蘑菇冬笋青菜，清淡鲜美'],
+      ['凉拌木耳', '蒜醋凉拌，脆爽开胃'],
+      ['麻辣豆腐', '川味素菜，麻辣烫鲜'],
+      ['蒜蓉空心菜', '蒜香清脆，夏日必备'],
+      ['素烧鹅', '豆腐皮仿鹅肉，斋菜经典'],
+      ['糖醋排骨(素)', '藕或面筋仿制，酸甜酥脆'],
+      ['素鱼香茄子', '无肉版鱼香，咸甜酸辣'],
+      ['白灼菜心', '广式白灼，蚝油提鲜'],
+      ['素什锦', '多种蔬菜杂炒，营养丰富'],
+      ['凉拌海带丝', '酸辣海带，清爽开胃'],
+      ['素鲍鱼', '杏鲍菇仿鲍鱼，菇香浓郁'],
+      ['豆腐脑(甜)', '嫩豆腐脑，糖水甜蜜'],
+      ['素火锅', '菌菇蔬菜豆腐，清汤涮煮'],
+      ['烤蔬菜拼盘', '多种蔬菜烤制，橄榄油']
+    ]
+  },
+  {
+    name: '🥐 烘焙面包', color: '#d4a574', textColor: '#fff',
+    foods: [
+      ['牛角包', '法式可颂，酥皮层层'],
+      ['法棍', '法国长棍，外脆内软'],
+      ['吐司', '日式软吐司，早餐必备'],
+      ['贝果', '纽约经典，韧劲十足'],
+      ['菠萝包', '港式面包，酥皮甜香'],
+      ['奶酥面包', '台式面包，奶香浓郁'],
+      ['红豆面包', '日式面包，红豆馅甜'],
+      ['全麦面包', '健康粗粮，饱腹感强'],
+      ['蒜香面包', '蒜蓉黄油，烤至焦香'],
+      ['肉桂卷', '北欧甜面包，肉桂糖香'],
+      ['可颂三明治', '可颂夹蛋芝士火腿'],
+      ['丹麦面包', '起酥面包，层层黄油'],
+      ['软欧包', '欧式软面包，外脆内软'],
+      ['碱水面包', '德式 Pretzel，咸香有嚼劲'],
+      ['布里欧修', '法式黄油面包，浓郁绵密'],
+      ['玛芬蛋糕', '英式松饼，蓝莓巧克力'],
+      ['司康', '英式下午茶，奶油果酱'],
+      ['瑞士卷', '蛋糕卷，奶油夹心'],
+      ['吐司布丁', '法式甜品，吐司烤蛋奶'],
+      ['巧克力面包', '巧克力馅，甜蜜诱惑'],
+      ['葡萄干面包', '面包加葡萄干，甜软'],
+      ['肉松面包', '台式面包，咸甜肉松'],
+      ['奶酪面包', '奶油奶酪馅，浓郁绵密'],
+      ['南瓜面包', '南瓜泥和面，金黄甜软'],
+      ['紫薯面包', '紫薯馅，颜值与美味'],
+      ['抹茶面包', '日式抹茶，微苦回甘'],
+      ['椰蓉面包', '椰丝椰蓉，热带风情'],
+      ['洋葱培根面包', '咸面包，香浓可口'],
+      ['水果塔', '法式甜点，水果鲜奶油'],
+      ['焦糖布丁面包', '面包加焦糖布丁，双重甜蜜']
+    ]
+  },
+  {
+    name: '🥢 卤味凉拌', color: '#795548', textColor: '#fff',
+    foods: [
+      ['卤牛肉', '五香卤制，切片凉拌'],
+      ['卤鸡翅', '卤水入味，鸡翅嫩滑'],
+      ['卤蛋', '茶叶卤蛋，入味弹牙'],
+      ['卤豆腐', '豆干卤制，咸香有嚼劲'],
+      ['凉拌黄瓜', '蒜泥醋汁，爽脆开胃'],
+      ['凉拌木耳', '蒜醋凉拌，脆爽开胃'],
+      ['凉拌海带丝', '酸辣海带，清爽开胃'],
+      ['凉拌腐竹', '豆制品凉拌，豆香浓郁'],
+      ['夫妻肺片', '川式凉菜，麻辣鲜香'],
+      ['口水鸡', '川菜凉菜，麻辣嫩滑'],
+      ['凉拌皮蛋', '姜醋皮蛋，凉菜经典'],
+      ['凉拌豆腐丝', '豆丝凉拌，清淡开胃'],
+      ['卤猪蹄', '胶原蛋白，软糯弹牙'],
+      ['卤鸡爪', '卤味小吃，啃着过瘾'],
+      ['凉拌海蜇', '海蜇皮凉拌，脆爽清凉'],
+      ['凉拌苦瓜', '冰镇苦瓜，清热降火'],
+      ['凉拌粉丝', '蒜蓉粉丝，清爽凉菜'],
+      ['卤大肠', '卤水大肠，肥而不腻'],
+      ['凉拌莴笋', '莴笋丝凉拌，清脆爽口'],
+      ['凉拌金针菇', '蒜蓉凉拌，滑嫩开胃'],
+      ['卤鸭脖', '麻辣卤味，追剧零食'],
+      ['卤鸭翅', '卤水鸭翅，入味有嚼劲'],
+      ['凉拌藕片', '酸辣藕片，脆爽开胃'],
+      ['凉拌番茄', '糖拌番茄，夏日经典'],
+      ['卤毛豆', '啤酒搭档，咸鲜弹牙'],
+      ['凉拌豆角', '焯水豆角，蒜蓉醋汁'],
+      ['卤豆干', '五香豆干，卤味零食'],
+      ['凉拌秋葵', '秋葵焯水，蘸酱油吃'],
+      ['卤猪耳', '脆骨卤制，下酒好菜'],
+      ['凉拌豆腐皮', '豆腐皮凉拌，豆香清爽']
+    ]
+  },
+  {
+    name: '🌿 药膳滋补', color: '#2d6a4f', textColor: '#fff',
+    foods: [
+      ['当归生姜羊肉汤', '药膳经典，温补驱寒'],
+      ['花胶炖鸡汤', '高级滋补，胶质满满'],
+      ['虫草花炖鸡', '药膳蒸菜，滋补养生'],
+      ['枸杞炖排骨', '健脾养胃，清淡滋补'],
+      ['党参炖乌鸡', '补气养血，乌鸡滋补'],
+      ['四物炖鸡', '台湾药膳，调经补血'],
+      ['山药炖排骨', '健脾养胃，清淡滋补'],
+      ['黄芪炖鸡汤', '补气固表，鸡汤鲜甜'],
+      ['红枣桂圆银耳汤', '滋阴润燥，甜汤滋补'],
+      ['燕窝炖冰糖', '高端滋补，润肺养颜'],
+      ['人参炖鸡汤', '大补元气，韩式参鸡汤'],
+      ['茯苓粥', '健脾祛湿，清淡养生'],
+      ['黑芝麻糊', '补肾乌发，香浓顺滑'],
+      ['核桃糊', '健脑补肾，香甜浓郁'],
+      ['阿胶糕', '阿胶红枣，补血养颜'],
+      ['杜仲炖猪腰', '补肾强腰，药膳煲汤'],
+      ['百合莲子汤', '清心安神，甜汤滋补'],
+      ['川贝炖雪梨', '润肺止咳，清甜滋润'],
+      ['姜母鸭', '台湾药膳，姜辣鸭香'],
+      ['十全大补汤', '中药十味，大补气血'],
+      ['鲍鱼炖鸡汤', '高端药膳，滋补强身'],
+      ['鹿茸炖汤', '高级滋补，温肾壮阳'],
+      ['铁皮石斛炖汤', '滋阴养胃，高级滋补'],
+      ['灵芝炖鸡汤', '免疫调节，高级药膳'],
+      ['何首乌炖黑豆', '乌发补肾，药膳经典'],
+      ['沙参玉竹汤', '润肺止咳，清补佳品'],
+      ['当归煮蛋', '补血调经，简单药膳'],
+      ['桑葚枸杞茶', '补肾明目，养生茶饮'],
+      ['黄精炖瘦肉', '补气养阴，药膳煲汤'],
+      ['桂圆红枣茶', '补气血，暖宫驱寒']
+    ]
+  },
+  {
+    name: '🥞 早餐早点', color: '#ffb74d', textColor: '#fff',
+    foods: [
+      ['豆浆油条', '国民早餐，绝配组合'],
+      ['包子', '北方早餐，猪肉大葱'],
+      ['馒头', '北方主食，朴实无华'],
+      ['粥配咸菜', '白粥小菜，清淡养胃'],
+      ['煎蛋', '单面or双面，简单营养'],
+      ['水煮蛋', '最健康的蛋白质来源'],
+      ['牛奶麦片', '西式早餐，简单快捷'],
+      ['三明治', '面包夹蛋芝士火腿'],
+      ['吐司配果酱', '西式简单早餐'],
+      ['肠粉', '广东早茶，滑嫩米香'],
+      ['虾饺', '广式早茶四大天王'],
+      ['烧卖', '糯米肉馅，蒸制点心'],
+      ['叉烧包', '粤式经典，甜咸适口'],
+      ['凤爪', '广式早茶，软烂脱骨'],
+      ['糯米鸡', '荷叶包裹，糯米咸香'],
+      ['鸡蛋灌饼', '薄饼灌蛋，街头早餐'],
+      ['手抓饼', '千层酥脆，可加蛋肠'],
+      ['葱油饼', '北方面食，层次分明'],
+      ['豆腐脑', '咸or甜，嫩滑豆香'],
+      ['茶叶蛋', '卤煮入味，早餐经典'],
+      ['烧饼夹肉', '北方烧饼，夹卤肉'],
+      ['煎饼', '杂粮煎饼，粗粮健康'],
+      ['饭团', '日式or台式，米饭裹料'],
+      ['蒸饺', '饺子蒸制，皮薄馅大'],
+      ['小笼汤包', '上海名点，皮薄汁多'],
+      ['粢饭团', '上海早餐，糯米裹油条'],
+      ['豆沙包', '甜包经典，红豆沙馅'],
+      ['奶黄包', '粤式早茶，奶香浓郁'],
+      ['紫薯包', '紫色外皮，紫薯馅甜'],
+      ['燕麦粥', '健康早餐，饱腹感强']
+    ]
+  },
+  {
+    name: '🦌 特色肉类', color: '#6d4c41', textColor: '#fff',
+    foods: [
+      ['烤全羊', '新疆/蒙古，整只烤制'],
+      ['手扒羊肉', '内蒙古，清水煮羊肉'],
+      ['烤羊排', '孜然羊排，外焦里嫩'],
+      ['涮羊肉', '老北京铜锅，清汤涮肉'],
+      ['羊肉串', '炭火烤制，孜然辣椒面'],
+      ['牛肉干', '风干牛肉，嚼劲十足'],
+      ['酱牛肉', '五香酱制，切片凉菜'],
+      ['炖牛肉', '番茄或红酒炖，软烂入味'],
+      ['牛排', '西式煎牛排，黑椒汁'],
+      ['牛杂煲', '广东煲仔，牛杂软烂'],
+      ['猪脚姜', '广东产妇补品，甜醋猪脚'],
+      ['红烧猪蹄', '浓油赤酱，软糯弹牙'],
+      ['烤乳猪', '粤菜名菜，皮脆肉嫩'],
+      ['叉烧', '广式烧味，蜜汁香甜'],
+      ['烧鹅', '香港烧味，皮脆肉嫩'],
+      ['白切鸡', '广东经典，原汁原味'],
+      ['盐焗鸡', '客家名菜，盐香鸡嫩'],
+      ['叫花鸡', '荷叶泥裹，酥烂脱骨'],
+      ['鸭血粉丝汤', '南京小吃，鸭血鸭肠'],
+      ['北京烤鸭', '片皮鸭，薄饼葱丝甜面酱'],
+      ['盐水鸭', '南京名菜，皮白肉嫩'],
+      ['腊味合蒸', '湖南腊肉腊鱼，蒸制咸香'],
+      ['兔头', '成都小吃，麻辣鲜香'],
+      ['鹿肉火锅', '东北特色，鹿肉滋补'],
+      ['鸵鸟肉排', ' exotic肉类，低脂高蛋白'],
+      ['骆驼掌', '新疆特色，胶质丰富'],
+      ['蛇羹', '广东名菜，鲜美滋补'],
+      ['乳鸽', '红烧or盐焗，鸽肉细嫩'],
+      ['猪肚鸡', '广东胡椒猪肚鸡，暖胃滋补'],
+      ['铁锅炖大鹅', '东北硬菜，肉质紧实']
+    ]
+  },
+  {
+    name: '🍿 零食茶点', color: '#ab47bc', textColor: '#fff',
+    foods: [
+      ['爆米花', '焦糖或咸味，影院零食'],
+      ['薯片', '多种口味，酥脆咸香'],
+      ['坚果拼盘', '核桃杏仁腰果，健康零食'],
+      ['巧克力', '黑巧牛奶巧，甜蜜治愈'],
+      ['曲奇饼干', '黄油曲奇，酥脆香甜'],
+      ['蛋糕卷', '奶油卷蛋糕，松软甜蜜'],
+      ['马卡龙', '法式甜点，缤纷色彩'],
+      ['泡芙', '酥皮奶油，一口爆浆'],
+      ['甜甜圈', '糖霜圈圈，早餐甜点'],
+      ['布朗尼', '巧克力软心，美式甜品'],
+      ['司康', '英式下午茶，奶油果酱'],
+      ['三明治饼干', '夹心饼干，童趣零食'],
+      ['海苔', '日式零食，鲜咸酥脆'],
+      ['牛肉干', '风干牛肉，嚼劲十足'],
+      ['果冻', 'Q弹果冻，水果口味'],
+      ['酸奶', '希腊酸奶，浓稠健康'],
+      ['水果干', '芒果干草莓干，天然甜味'],
+      ['花生米', '下酒零食，酥脆咸香'],
+      ['瓜子', '休闲零食，嗑着聊天'],
+      ['核桃酥', '中式糕点，核桃香脆'],
+      ['凤梨酥', '台湾名产，凤梨馅甜'],
+      ['绿豆糕', '中式糕点，绿豆清香'],
+      ['桂花糕', '江南甜点，桂花清香'],
+      ['芝士条', '咸香芝士，酥脆零食'],
+      ['能量棒', '坚果燕麦，健身零食'],
+      ['米花糖', '爆米花加糖，童年零食'],
+      ['萨其马', '满族糕点，甜软酥松'],
+      ['麻花', '北方面食，酥脆香甜'],
+      ['枣泥糕', '中式甜点，红枣泥馅'],
+      ['黄油酥', '层层黄油，酥脆香甜']
+    ]
+  }
 ];
 
-// ========== 转盘绘制 ==========
+// ========================================================================
+//  转盘逻辑
+// ========================================================================
+let activeCategories = CATEGORIES.slice();
+let excludedCategories = [];
+let currentSpinning = false;
+let currentResult = null;
+
 const canvas = document.getElementById('wheel');
 const ctx = canvas.getContext('2d');
-const N = CATEGORIES.length; // 16
-let activeIndices = [...Array(N).keys()]; // 当前可用的分类索引
-let currentAngle = 0;
-let isSpinning = false;
-let spinCount = 0;
-let excludedCategories = []; // 被排除的分类名称
+let DPR = window.devicePixelRatio || 1;
+let currentRotation = 0; // 当前转盘累积旋转弧度（canvas绘制时的整体旋转）
+
+// ============================================================
+//  角度约定（统一标准，杜绝指针指向不一致）：
+//
+//  ★ 我们自定义一个「屏幕角度」系统：
+//    - 0° = 顶部（12点钟），顺时针为正
+//    - 90° = 右边（3点钟），180° = 底部，270° = 左边
+//
+//  ★ Canvas 内部角度系统：
+//    - 0° = 右边（3点钟），顺时针为正（Y轴向下）
+//    - 所以 canvas 角度 = 屏幕角度 - 90°（即减去 π/2）
+//
+//  ★ 扇区 i 的「屏幕中心角度」= i * arc（从顶部顺时针排）
+//  ★ 指针始终在屏幕 0° 方向（顶部）
+//  ★ 要让扇区 i 对准指针：扇区 i 的屏幕角度 + currentRotation = 0 (mod 360)
+//    即 currentRotation = -i * arc (mod 2π)
+// ============================================================
+
+// 将「屏幕角度」（0°=顶部，顺时针）转换为 canvas 内部角度
+function screenToCanvasAngle(screenAngle) {
+  return screenAngle - Math.PI / 2; // 屏幕0°(顶部) → canvas -90°(也是顶部)
+}
+
+// 将 canvas 内部角度转换回「屏幕角度」
+function canvasToScreenAngle(canvasAngle) {
+  let a = canvasAngle + Math.PI / 2;
+  // 归一化到 [0, 2π)
+  a = ((a % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2);
+  return a;
+}
+
+function resizeCanvas() {
+  DPR = window.devicePixelRatio || 1;
+  const rect = canvas.parentElement.getBoundingClientRect();
+  const size = rect.width;
+  canvas.width = size * DPR;
+  canvas.height = size * DPR;
+  canvas.style.width = size + 'px';
+  canvas.style.height = size + 'px';
+  ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+  drawWheel();
+}
 
 function drawWheel() {
-  const cx = canvas.width / 2, cy = canvas.height / 2;
-  const radius = canvas.width / 2 - 4;
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  const w = canvas.width / DPR;
+  const h = canvas.height / DPR;
+  const cx = w / 2, cy = h / 2;
+  const radius = w / 2 - 4;
+  const count = activeCategories.length;
 
-  const segAngle = (2 * Math.PI) / activeIndices.length;
+  ctx.clearRect(0, 0, w, h);
 
-  // 绘制每个扇区
-  activeIndices.forEach((catIdx, i) => {
-    const cat = CATEGORIES[catIdx];
-    const startAngle = currentAngle + i * segAngle - Math.PI / 2;
-    const endAngle = startAngle + segAngle;
-
-    // 扇区
+  if (count === 0) {
     ctx.beginPath();
-    ctx.moveTo(cx, cy);
-    ctx.arc(cx, cy, radius, startAngle, endAngle);
-    ctx.closePath();
+    ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+    ctx.fillStyle = '#2a2a4a';
+    ctx.fill();
+    ctx.fillStyle = '#fff';
+    ctx.font = '16px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('所有分类已排除', cx, cy - 10);
+    ctx.fillText('请重置转盘', cx, cy + 15);
+    return;
+  }
 
-    // 渐变填充
-    const grad = ctx.createRadialGradient(cx, cy, radius * 0.2, cx, cy, radius);
-    grad.addColorStop(0, lighten(cat.color, 30));
-    grad.addColorStop(1, cat.color);
-    ctx.fillStyle = grad;
+  const arc = (Math.PI * 2) / count;
+
+  // 扇区 i 的「屏幕中心角度」= i * arc（从顶部顺时针）
+  // 转换为 canvas 角度需要减去 π/2
+  // 但我们用 ctx.rotate(currentRotation) 来旋转整个转盘
+  // 策略：先把 canvas 坐标系旋转 -π/2 让 0° 指向顶部
+  // 然后扇区 i 就从 i*arc 开始画
+
+  ctx.save();
+  ctx.translate(cx, cy);
+
+  // 先旋转 -π/2 让 0° 对齐到顶部（屏幕角度系统）
+  // 再加上 currentRotation（顺时针为正）
+  ctx.rotate(-Math.PI / 2 + currentRotation);
+
+  for (let i = 0; i < count; i++) {
+    const cat = activeCategories[i];
+    // 扇区 i 从屏幕角度 i*arc 到 (i+1)*arc
+    // 由于已旋转 -π/2，canvas 角度 = 屏幕角度
+    const startAngle = i * arc;
+    const endAngle = startAngle + arc;
+
+    ctx.beginPath();
+    ctx.moveTo(0, 0);
+    ctx.arc(0, 0, radius, startAngle, endAngle);
+    ctx.closePath();
+    ctx.fillStyle = cat.color;
     ctx.fill();
 
-    // 边框线
-    ctx.strokeStyle = 'rgba(255,255,255,0.25)';
-    ctx.lineWidth = 1.5;
+    ctx.strokeStyle = 'rgba(255,255,255,0.15)';
+    ctx.lineWidth = 1;
     ctx.stroke();
 
-    // 文字
+    // 文字放在扇区中间
     ctx.save();
-    ctx.translate(cx, cy);
-    ctx.rotate(startAngle + segAngle / 2);
+    ctx.rotate(startAngle + arc / 2);
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
 
-    const textR = radius * 0.62;
-    const fontSize = activeIndices.length > 12 ? 13 : 15;
-    ctx.font = `bold ${fontSize}px 'Microsoft YaHei'`;
-    ctx.fillStyle = '#fff';
+    const textR = radius * 0.58;
+    const fontSize = Math.max(8, Math.min(12, w / (count * 0.35)));
+    ctx.font = 'bold ' + fontSize + 'px "WenQuanYi Micro Hei", sans-serif';
+    ctx.fillStyle = cat.textColor;
+
     ctx.shadowColor = 'rgba(0,0,0,0.5)';
-    ctx.shadowBlur = 4;
+    ctx.shadowBlur = 3;
+    ctx.shadowOffsetX = 1;
+    ctx.shadowOffsetY = 1;
 
-    const label = cat.emoji + ' ' + cat.name;
-    // 如果文字太长，缩小
-    const metrics = ctx.measureText(label);
-    if (metrics.width > radius * 0.7) {
-      ctx.font = `bold 11px 'Microsoft YaHei'`;
-    }
-    ctx.fillText(label, textR, 0);
+    // 缩短文字适配小扇区
+    let name = cat.name;
+    if (name.length > 6) name = name.substring(0, 6);
+    ctx.fillText(name, textR, 0);
     ctx.restore();
-  });
+  }
 
-  // 外圈金色圆环
-  ctx.beginPath();
-  ctx.arc(cx, cy, radius, 0, 2 * Math.PI);
-  ctx.strokeStyle = 'rgba(255,217,61,0.6)';
-  ctx.lineWidth = 3;
-  ctx.stroke();
+  ctx.restore();
 
-  // 内圈装饰
+  // 中心装饰圆（不随转盘旋转）
   ctx.beginPath();
-  ctx.arc(cx, cy, radius * 0.22, 0, 2 * Math.PI);
-  ctx.strokeStyle = 'rgba(255,255,255,0.15)';
+  ctx.arc(cx, cy, radius * 0.16, 0, Math.PI * 2);
+  ctx.fillStyle = '#1a1a2e';
+  ctx.fill();
+  ctx.strokeStyle = 'rgba(255,255,255,0.2)';
   ctx.lineWidth = 2;
   ctx.stroke();
 }
 
-function lighten(hex, pct) {
-  let r = parseInt(hex.slice(1,3),16), g = parseInt(hex.slice(3,5),16), b = parseInt(hex.slice(5,7),16);
-  r = Math.min(255, r + pct); g = Math.min(255, g + pct); b = Math.min(255, b + pct);
-  return `rgb(${r},${g},${b})`;
-}
-
-// ========== 装饰灯泡 ==========
 function createBulbs() {
   const container = document.getElementById('bulbs');
   container.innerHTML = '';
-  const colors = ['#ff6b6b','#ffd93d','#6bcb77','#4d96ff','#ff6b6b','#ffd93d','#a29bfe','#fd79a8','#00cec9','#fdcb6e','#e17055','#74b9ff','#dfe6e9','#b2bec3','#636e72','#d63031','#e84393','#0984e3','#6c5ce7','#00b894'];
-  for (let i = 0; i < 24; i++) {
-    const angle = (i / 24) * 360;
-    const rad = angle * Math.PI / 180;
-    const r = 556 / 2;
-    const x = r + r * Math.cos(rad) - 5;
-    const y = r + r * Math.sin(rad) - 5;
+  const bulbCount = 24;
+  const colors = ['#ff6b00', '#ffb800', '#ff4757', '#ffa502', '#eccc68', '#ff6348'];
+  for (let i = 0; i < bulbCount; i++) {
+    const angle = (i / bulbCount) * 360;
     const bulb = document.createElement('div');
     bulb.className = 'bulb';
-    bulb.style.left = x + 'px';
-    bulb.style.top = y + 'px';
-    bulb.style.background = colors[i % colors.length];
-    bulb.style.color = colors[i % colors.length];
+    bulb.style.setProperty('--a', angle + 'deg');
+    const color = colors[i % colors.length];
+    bulb.style.background = color;
+    bulb.style.color = color;
     container.appendChild(bulb);
   }
 }
-createBulbs();
 
-// ========== 旋转逻辑 ==========
 function spin() {
-  if (isSpinning) return;
-  if (activeIndices.length === 0) {
-    alert('所有分类都排除了！点击"重置转盘"重新开始吧 🔄');
-    return;
-  }
-  if (activeIndices.length === 1) {
-    // 只剩一个，直接选中
-    showResult(activeIndices[0]);
+  if (currentSpinning) return;
+  if (activeCategories.length === 0) {
+    showEmptyModal();
     return;
   }
 
-  isSpinning = true;
-  spinCount++;
-  document.getElementById('spinCount').textContent = spinCount;
-  document.getElementById('spinBtn').classList.add('disabled');
+  currentSpinning = true;
+  const btn = document.getElementById('spinBtn');
+  btn.classList.add('disabled');
+  btn.textContent = '转动中';
 
-  const segAngle = (2 * Math.PI) / activeIndices.length;
-  // 随机选一个扇区
-  const targetIndex = Math.floor(Math.random() * activeIndices.length);
-  // 目标扇区的中心角度（在转盘本地坐标中）
-  const targetCenter = targetIndex * segAngle + segAngle / 2;
-  // 指针在顶部 = -90° = 3π/2 方向
-  // 需要让目标扇区转到顶部
-  const desiredAngle = (3 * Math.PI / 2) - targetCenter;
-  // 归一化
-  let normDesired = desiredAngle % (2 * Math.PI);
-  if (normDesired < 0) normDesired += 2 * Math.PI;
+  const count = activeCategories.length;
+  const arc = (Math.PI * 2) / count;
 
-  // 总旋转 = 当前角度到目标角度 + 多转几圈
-  const extraSpins = 5 + Math.random() * 4; // 5~9 圈
-  const totalRotation = extraSpins * 2 * Math.PI + (normDesired - currentAngle % (2 * Math.PI) + 2 * Math.PI) % (2 * Math.PI);
+  // 随机选一个目标扇区
+  const targetIndex = Math.floor(Math.random() * count);
+  const targetCat = activeCategories[targetIndex];
 
-  const duration = 5000 + Math.random() * 2000; // 5~7秒
+  // ===== 角度计算（统一使用屏幕角度系统）=====
+  // 屏幕角度：0° = 顶部，顺时针为正
+  // 扇区 i 的屏幕中心角度 = i * arc + arc / 2
+  // 指针在屏幕 0° 方向
+  //
+  // drawWheel 中：ctx.rotate(-π/2 + currentRotation)
+  // 这意味着 canvas 角度 0 对应屏幕角度 currentRotation
+  // 扇区 i 的屏幕角度 = currentRotation + i * arc
+  //
+  // 要让扇区 targetIndex 对准指针(屏幕0°)：
+  //   currentRotation_new + targetIndex * arc = 0 (mod 2π)
+  //   currentRotation_new = -targetIndex * arc (mod 2π)
+  //
+  // deltaRotation = currentRotation_new - currentRotation
+  //               = -targetIndex * arc - currentRotation (mod 2π)
+
+  const targetSectorScreenAngle = targetIndex * arc + arc / 2;
+
+  // 目标：扇区中心对准指针(屏幕0°)
+  // currentRotation_after + targetSectorScreenAngle = 0 (mod 2π)
+  // currentRotation_after = -targetSectorScreenAngle (mod 2π)
+  let targetRotation = -targetSectorScreenAngle;
+  // 归一化到 [0, 2π)
+  targetRotation = ((targetRotation % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2);
+
+  // 从当前位置到目标位置需要旋转的量
+  // 我们要顺时针旋转（正值），所以找最短正路径
+  let deltaRotation = targetRotation - currentRotation;
+  // 归一化到 [0, 2π)
+  deltaRotation = ((deltaRotation % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2);
+
+  // 加上额外的整圈旋转（5~8圈）
+  const fullSpins = 5 + Math.floor(Math.random() * 4);
+  const totalRotation = fullSpins * Math.PI * 2 + deltaRotation;
+
+  const duration = 5000 + Math.random() * 2000;
   const startTime = performance.now();
-  const startAngle = currentAngle;
+  const startRotation = currentRotation;
 
   function easeOutCubic(t) { return 1 - Math.pow(1 - t, 3); }
 
@@ -971,161 +1605,234 @@ function spin() {
     const elapsed = now - startTime;
     const progress = Math.min(elapsed / duration, 1);
     const eased = easeOutCubic(progress);
-    currentAngle = startAngle + totalRotation * eased;
+    currentRotation = startRotation + totalRotation * eased;
     drawWheel();
-
     if (progress < 1) {
       requestAnimationFrame(animate);
     } else {
-      currentAngle = currentAngle % (2 * Math.PI);
-      isSpinning = false;
-      document.getElementById('spinBtn').classList.remove('disabled');
-      // 确定最终落在哪个扇区
-      const seg = (2 * Math.PI) / activeIndices.length;
-      // 指针在顶部 = 角度 3π/2 方向
-      let pointerAngle = (3 * Math.PI / 2 - currentAngle) % (2 * Math.PI);
-      if (pointerAngle < 0) pointerAngle += 2 * Math.PI;
-      const landedIndex = Math.floor(pointerAngle / seg);
-      const catIdx = activeIndices[landedIndex];
-      setTimeout(() => showResult(catIdx), 300);
+      // 动画结束，精确设置为目标角度 + 整圈
+      currentRotation = startRotation + totalRotation;
+      // 归一化
+      currentRotation = ((currentRotation % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2);
+
+      // 验证：扇区 targetIndex 此时应该在指针位置
+      // 扇区 i 的屏幕角度 = currentRotation + i * arc (mod 2π)
+      const sectorAngle = (currentRotation + targetIndex * arc + arc / 2) % (Math.PI * 2);
+      // 应该 ≈ 0 或 2π
+      const diff = Math.min(sectorAngle, Math.PI * 2 - sectorAngle);
+      if (diff > 0.01) {
+        console.warn('[转盘] 角度校验偏差: ' + (diff * 180 / Math.PI).toFixed(2) + '°');
+      }
+
+      currentSpinning = false;
+      btn.classList.remove('disabled');
+      btn.textContent = '开始';
+      currentResult = targetCat;
+      showResultModal(targetCat);
+      launchConfetti();
     }
   }
   requestAnimationFrame(animate);
 }
 
-// ========== 弹窗 ==========
-function showResult(catIdx) {
-  const cat = CATEGORIES[catIdx];
-  document.getElementById('modalEmoji').textContent = cat.emoji;
-  document.getElementById('modalCategory').textContent = cat.name;
-  document.getElementById('modalDesc').textContent = cat.desc;
+// 获取指针当前指向的分类
+// 指针在屏幕 0°（顶部）
+// 扇区 i 的屏幕角度 = (currentRotation + i * arc) % 2π
+// 扇区 i 占据 [(currentRotation + i*arc) % 2π, (currentRotation + (i+1)*arc) % 2π]
+// 指针在 0°，找包含 0° 的扇区
+function getPointedCategory() {
+  const count = activeCategories.length;
+  if (count === 0) return null;
+  const arc = (Math.PI * 2) / count;
 
-  // 填充食物表格
-  const tbody = document.getElementById('foodTableBody');
-  tbody.innerHTML = '';
-  cat.foods.forEach((food, i) => {
-    const tr = document.createElement('tr');
-    tr.innerHTML = `<td class="num">${i+1}</td><td>🍽️ ${food[0]}</td><td><span style="color:rgba(255,255,255,0.5);font-size:12px">${food[1]}</span></td>`;
-    tbody.appendChild(tr);
+  // 反向计算：currentRotation + i * arc ≤ 0 < currentRotation + (i+1) * arc (mod 2π)
+  // 等价于：(-currentRotation) 落在 [i*arc, (i+1)*arc) 模 2π
+  let negRot = (-currentRotation) % (Math.PI * 2);
+  if (negRot < 0) negRot += Math.PI * 2;
+
+  const index = Math.floor(negRot / arc) % count;
+  return activeCategories[index];
+}
+
+function showResultModal(cat) {
+  const modal = document.getElementById('modal');
+  document.getElementById('modalTitle').textContent = '🎉 恭喜抽到：' + cat.name;
+  document.getElementById('modalSubtitle').textContent = '以下 ' + cat.foods.length + ' 种美食供你挑选 👇';
+
+  let tableHTML = '<div class="food-table-wrap"><table class="food-table"><thead><tr><th class="col-no">#</th><th>美食名称</th><th>特色说明</th></tr></thead><tbody>';
+  cat.foods.forEach(function(f, i) {
+    tableHTML += '<tr><td class="col-no">' + (i+1) + '</td><td class="col-name">' + f[0] + '</td><td class="col-desc">' + f[1] + '</td></tr>';
   });
+  tableHTML += '</tbody></table></div>';
+  document.getElementById('modalBody').innerHTML = tableHTML;
 
-  document.getElementById('modal').classList.add('show');
-  // 撒花
-  launchConfetti();
+  document.getElementById('modalBtns').innerHTML =
+    '<button class="btn-confirm" onclick="confirmChoice()">✅ 就吃这个！</button>' +
+    '<button class="btn-reject" onclick="rejectAndRespin()">🙅 不想吃，再转</button>' +
+    '<button class="btn-reroll" onclick="rerollKeep()">🎯 直接再转</button>';
+
+  modal.classList.add('show');
+}
+
+function showEmptyModal() {
+  const modal = document.getElementById('modal');
+  document.getElementById('modalTitle').textContent = '😅 所有分类都排除了';
+  document.getElementById('modalSubtitle').textContent = '点击下方按钮重置转盘吧';
+  document.getElementById('modalBody').innerHTML =
+    '<div class="empty-state"><div class="big-emoji">🍽️</div><p>已经没有可选分类了</p>' +
+    '<p style="margin-top:8px;font-size:0.8rem;color:rgba(255,255,255,0.4);">共排除了 ' + excludedCategories.length + ' 个分类</p></div>';
+  document.getElementById('modalBtns').innerHTML = '<button class="btn-confirm" onclick="closeModal()">✅ 知道了</button>';
+  modal.classList.add('show');
 }
 
 function closeModal() {
   document.getElementById('modal').classList.remove('show');
 }
 
-function closeModalAndSpin() {
-  document.getElementById('modal').classList.remove('show');
-  setTimeout(() => spin(), 300);
+function confirmChoice() {
+  closeModal();
 }
 
-// 「不想吃」→ 排除当前分类，再转
-function skipAndRespin() {
-  // 获取当前弹窗显示的分类
-  const catName = document.getElementById('modalCategory').textContent;
-  const catIdx = CATEGORIES.findIndex(c => c.name === catName);
-  if (catIdx >= 0) {
-    excludeCategory(catIdx);
-  }
-  document.getElementById('modal').classList.remove('show');
-  setTimeout(() => spin(), 400);
-}
-
-function excludeCategory(catIdx) {
-  const cat = CATEGORIES[catIdx];
-  // 从 active 中移除
-  activeIndices = activeIndices.filter(i => i !== catIdx);
-  if (!excludedCategories.includes(cat.name)) {
-    excludedCategories.push(cat.name);
-  }
-  updateStats();
+function rejectAndRespin() {
+  if (!currentResult) return;
+  const cat = currentResult;
+  activeCategories = activeCategories.filter(function(c) { return c.name !== cat.name; });
+  excludedCategories.push(cat);
+  renderExcludedTags();
+  closeModal();
+  currentResult = null;
   drawWheel();
+  setTimeout(function() {
+    if (activeCategories.length > 0) {
+      spin();
+    } else {
+      showEmptyModal();
+    }
+  }, 400);
 }
 
-function updateStats() {
-  document.getElementById('remainCount').textContent = activeIndices.length;
-  document.getElementById('excludedCount').textContent = excludedCategories.length;
-  // 更新排除标签
-  const bar = document.getElementById('excludedBar');
-  bar.innerHTML = excludedCategories.map(name => {
-    const cat = CATEGORIES.find(c => c.name === name);
-    return `<span class="excluded-tag">${cat ? cat.emoji : ''} ${name} ✕</span>`;
-  }).join('');
+function rerollKeep() {
+  closeModal();
+  currentResult = null;
+  setTimeout(function() { spin(); }, 300);
+}
+
+function renderExcludedTags() {
+  const area = document.getElementById('excludedArea');
+  area.innerHTML = excludedCategories.map(function(c) { return '<span class="excluded-tag">' + c.name + '</span>'; }).join('');
 }
 
 function resetWheel() {
-  activeIndices = [...Array(N).keys()];
+  activeCategories = CATEGORIES.slice();
   excludedCategories = [];
-  currentAngle = 0;
-  spinCount = 0;
-  updateStats();
-  document.getElementById('spinCount').textContent = '0';
+  currentResult = null;
+  currentRotation = 0;
+  renderExcludedTags();
   drawWheel();
-  document.getElementById('modal').classList.remove('show');
+  closeModal();
 }
 
-// ========== 撒花效果 ==========
+function showAllCategories() {
+  const modal = document.getElementById('modal');
+  document.getElementById('modalTitle').textContent = '📋 全部分类一览';
+  document.getElementById('modalSubtitle').textContent = '共 ' + CATEGORIES.length + ' 大分类，' + CATEGORIES.reduce(function(sum, c) { return sum + c.foods.length; }, 0) + ' 种美食';
+
+  let html = '';
+  CATEGORIES.forEach(function(cat) {
+    const isExcluded = excludedCategories.some(function(c) { return c.name === cat.name; });
+    html += '<div style="margin-bottom:8px;padding:8px;border-radius:10px;background:' + cat.color + '22;border:1px solid ' + cat.color + '44;' + (isExcluded ? 'opacity:0.4;' : '') + '">' +
+      '<div style="font-weight:700;color:' + cat.color + ';margin-bottom:3px;font-size:0.85rem;">' + cat.name + ' ' + (isExcluded ? '(已排除)' : '') + ' <span style="color:rgba(255,255,255,0.4);font-weight:400;font-size:0.7rem;">(' + cat.foods.length + '种)</span></div>' +
+      '<div style="font-size:0.65rem;color:rgba(255,255,255,0.5);line-height:1.6;">' + cat.foods.map(function(f){return f[0];}).join('、') + '</div></div>';
+  });
+  document.getElementById('modalBody').innerHTML = '<div style="max-height:50vh;overflow-y:auto;-webkit-overflow-scrolling:touch;">' + html + '</div>';
+  document.getElementById('modalBtns').innerHTML = '<button class="btn-confirm" onclick="closeModal()">✅ 知道了</button>';
+  modal.classList.add('show');
+}
+
 function launchConfetti() {
-  const canvas = document.getElementById('confetti');
-  canvas.width = window.innerWidth;
-  canvas.height = window.innerHeight;
-  const ctx = canvas.getContext('2d');
-  const colors = ['#ff6b6b','#ffd93d','#6bcb77','#4d96ff','#e17055','#a29bfe','#fd79a8','#00cec9','#fdcb6e','#e84393'];
-  const pieces = [];
-  for (let i = 0; i < 120; i++) {
-    pieces.push({
-      x: Math.random() * canvas.width,
-      y: -20 - Math.random() * 100,
-      vx: (Math.random() - 0.5) * 4,
-      vy: 2 + Math.random() * 4,
-      size: 5 + Math.random() * 8,
-      color: colors[Math.floor(Math.random() * colors.length)],
-      rot: Math.random() * 360,
-      rotSpeed: (Math.random() - 0.5) * 10,
-      shape: Math.random() > 0.5 ? 'rect' : 'circle'
-    });
+  const colors = ['#ff6b00','#ffb800','#ff4757','#ffa502','#eccc68','#ff6348','#70a1ff','#7bed9f','#ff6b81','#a29bfe'];
+  const count = window.innerWidth < 600 ? 40 : 80;
+  for (let i = 0; i < count; i++) {
+    const conf = document.createElement('div');
+    conf.className = 'confetti';
+    const size = 6 + Math.random() * 8;
+    conf.style.cssText =
+      'left:' + Math.random()*100 + '%;' +
+      'width:' + size + 'px;height:' + (size*0.4) + 'px;' +
+      'background:' + colors[Math.floor(Math.random()*colors.length)] + ';' +
+      'border-radius:' + (Math.random()>0.5?'50%':'2px') + ';' +
+      'animation-duration:' + (2+Math.random()*3) + 's;' +
+      'animation-delay:' + (Math.random()*0.5) + 's;' +
+      'transform:rotate(' + (Math.random()*360) + 'deg);';
+    document.body.appendChild(conf);
+    setTimeout(function() { conf.remove(); }, 5500);
   }
-  let frame = 0;
-  function draw() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    pieces.forEach(p => {
-      p.x += p.vx;
-      p.y += p.vy;
-      p.vy += 0.03; // 重力
-      p.rot += p.rotSpeed;
-      ctx.save();
-      ctx.translate(p.x, p.y);
-      ctx.rotate(p.rot * Math.PI / 180);
-      ctx.fillStyle = p.color;
-      if (p.shape === 'rect') {
-        ctx.fillRect(-p.size/2, -p.size/3, p.size, p.size * 0.66);
-      } else {
-        ctx.beginPath();
-        ctx.arc(0, 0, p.size/2, 0, Math.PI * 2);
-        ctx.fill();
-      }
-      ctx.restore();
-    });
-    frame++;
-    if (frame < 200) requestAnimationFrame(draw);
-    else ctx.clearRect(0, 0, canvas.width, canvas.height);
-  }
-  draw();
 }
 
-// ========== 键盘空格 ==========
-document.addEventListener('keydown', (e) => {
+function createParticles() {
+  const container = document.getElementById('particles');
+  container.innerHTML = '';
+  const count = window.innerWidth < 600 ? 15 : 30;
+  const colors = ['#ff6b00','#ffb800','#ff4757','#a29bfe','#70a1ff','#7bed9f'];
+  for (let i = 0; i < count; i++) {
+    const p = document.createElement('div');
+    p.className = 'particle';
+    const size = 4 + Math.random() * 12;
+    p.style.cssText =
+      'left:' + Math.random()*100 + '%;' +
+      'width:' + size + 'px;height:' + size + 'px;' +
+      'background:' + colors[Math.floor(Math.random()*colors.length)] + ';' +
+      'animation-duration:' + (8+Math.random()*12) + 's;' +
+      'animation-delay:' + (Math.random()*10) + 's;';
+    container.appendChild(p);
+  }
+}
+
+document.addEventListener('keydown', function(e) {
   if (e.code === 'Space') { e.preventDefault(); spin(); }
   if (e.code === 'Escape') { closeModal(); }
 });
 
-// ========== 初始化 ==========
-drawWheel();
-updateStats();
+window.addEventListener('resize', function() {
+  resizeCanvas();
+  createParticles();
+});
+
+// 防止移动端触摸滑动导致页面滚动
+document.addEventListener('touchmove', function(e) {
+  if (e.target.closest('.modal-overlay') || e.target.closest('.food-table-wrap')) return;
+  e.preventDefault();
+}, { passive: false });
+
+// 初始化
+createBulbs();
+createParticles();
+resizeCanvas();
+
+// 自测：确保指针指向计算正确
+console.log('[转盘] 共 ' + CATEGORIES.length + ' 个分类，' + CATEGORIES.reduce(function(s,c){return s+c.foods.length;},0) + ' 种美食');
+console.log('[转盘] 角度系统: 0°=顶部，顺时针为正');
+
+// 启动时验证：旋转到每个扇区，检查指针指向
+(function selfTest() {
+  const count = CATEGORIES.length;
+  const arc = (Math.PI * 2) / count;
+  let pass = 0, fail = 0;
+  for (let i = 0; i < count; i++) {
+    // 模拟扇区 i 对准指针时的 currentRotation
+    // 扇区 i 屏幕角度 = currentRotation + i*arc + arc/2 = 0 (mod 2π)
+    currentRotation = (-i * arc - arc / 2) % (Math.PI * 2);
+    if (currentRotation < 0) currentRotation += Math.PI * 2;
+    const pointed = getPointedCategory();
+    if (pointed && pointed.name === CATEGORIES[i].name) {
+      pass++;
+    } else {
+      fail++;
+      console.error('[自测] 扇区' + i + ' 指向错误: 期望 ' + CATEGORIES[i].name + ', 实际 ' + (pointed ? pointed.name : 'null'));
+    }
+  }
+  console.log('[自测] 指针指向验证: ' + pass + '/' + count + ' 通过' + (fail > 0 ? ', ' + fail + ' 失败' : ''));
+})();
 </script>
 </body>
 </html>
